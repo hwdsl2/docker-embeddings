@@ -1,0 +1,112 @@
+name: embed_test
+
+on: workflow_call
+
+jobs:
+  embed_test:
+    runs-on: ubuntu-24.04
+    if: github.repository_owner == 'hwdsl2'
+    strategy:
+      matrix:
+        test_id: [no-env, with-env]
+      fail-fast: false
+    env:
+      TEST_ID: ${{ matrix.test_id }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Test
+        run: |
+          [ ! -x /usr/bin/docker ] && exit 1
+
+          cd "$GITHUB_WORKSPACE"
+          pwd
+          ls -ld embed.env.example
+
+          set -x
+
+          docker build -t embed-test .
+
+          if [ "$TEST_ID" = "with-env" ]; then
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -v embed-test-data:/var/lib/embeddings \
+              -v ./embed.env.example:/embed.env:ro \
+              -e EMBED_MODEL=BAAI/bge-small-en-v1.5 \
+              -p 8000:8000/tcp \
+              -d embed-test
+          elif [ "$TEST_ID" = "no-env" ]; then
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -v embed-test-data:/var/lib/embeddings \
+              -e EMBED_MODEL=BAAI/bge-small-en-v1.5 \
+              -p 8000:8000/tcp \
+              -d embed-test
+          fi
+
+          # Wait for server to be ready (up to 300 seconds for model download)
+          i=0
+          while [ "$i" -lt 300 ]; do
+            if docker exec "$TEST_ID" curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+            i=$((i + 1))
+          done
+
+          docker ps | grep "$TEST_ID"
+          docker logs "$TEST_ID"
+
+          # Verify health endpoint
+          docker exec "$TEST_ID" curl -sf http://127.0.0.1:8000/health
+
+          # Verify info endpoint
+          docker exec "$TEST_ID" curl -sf http://127.0.0.1:8000/info \
+            | grep -q '"model_id"'
+
+          # Test embed_manage commands
+          docker exec "$TEST_ID" embed_manage --showinfo
+          docker exec "$TEST_ID" embed_manage --listmodels
+
+          # Test embeddings endpoint (single input)
+          curl -sf http://127.0.0.1:8000/v1/embeddings \
+            -H "Content-Type: application/json" \
+            -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}' \
+            | grep -q '"embedding"'
+
+          # Test embeddings endpoint (batch input)
+          curl -sf http://127.0.0.1:8000/v1/embeddings \
+            -H "Content-Type: application/json" \
+            -d '{"input": ["First sentence", "Second sentence"], "model": "text-embedding-ada-002"}' \
+            | grep -q '"embedding"'
+
+          docker restart "$TEST_ID"
+
+          sleep 15
+
+          # Wait for server to come back (up to 120 seconds)
+          i=0
+          while [ "$i" -lt 120 ]; do
+            if docker exec "$TEST_ID" curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+            i=$((i + 1))
+          done
+
+          docker ps | grep "$TEST_ID"
+          docker logs "$TEST_ID"
+
+          # Verify server is healthy after restart
+          docker exec "$TEST_ID" curl -sf http://127.0.0.1:8000/health
+
+          exit 0
+      - name: Clear
+        if: always()
+        run: |
+          docker rm -f "$TEST_ID" || true
+          docker volume rm embed-test-data || true
+          docker rmi embed-test || true

@@ -1,0 +1,34 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/main.yml'
+      - '.github/workflows/buildx.yml'
+      - '.github/workflows/shellcheck.yml'
+      - '.github/workflows/embed_test.yml'
+      - '.dockerignore'
+      - 'Dockerfile'
+      - 'manage.sh'
+      - 'run.sh'
+      - 'embed.env.example'
+
+jobs:
+  shellcheck:
+    if: github.repository_owner == 'hwdsl2'
+    uses: ./.github/workflows/shellcheck.yml
+
+  embed_test:
+    if: github.repository_owner == 'hwdsl2'
+    uses: ./.github/workflows/embed_test.yml
+
+  buildx:
+    needs: [shellcheck, embed_test]
+    uses: ./.github/workflows/buildx.yml
+    secrets:
+      CACHE_NAME: ${{ secrets.CACHE_NAME }}
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      QUAY_USER: ${{ secrets.QUAY_USER }}
+      QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+      BUILD_ONLY: ${{ secrets.BUILD_ONLY }}
