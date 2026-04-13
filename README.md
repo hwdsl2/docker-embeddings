@@ -373,7 +373,7 @@ Your downloaded models are preserved in the `embeddings-data` volume.
 
 ## Using with other AI services
 
-The [Whisper (STT)](https://github.com/hwdsl2/docker-whisper), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), and [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro) images can be combined to build a complete, private AI stack on your own server — from semantic document search and RAG to full voice I/O. No data is sent to third parties.
+The [Whisper (STT)](https://github.com/hwdsl2/docker-whisper), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), and [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro) images can be combined to build a complete, private AI stack on your own server — from semantic document search and RAG to full voice I/O. Whisper, Kokoro, and Embeddings run fully locally. When using LiteLLM with local models only (e.g., Ollama), no data is sent to third parties. If you configure LiteLLM with external providers (e.g., OpenAI, Anthropic), your data will be sent to those providers.
 
 ```mermaid
 graph LR
