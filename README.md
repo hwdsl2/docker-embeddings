@@ -4,7 +4,7 @@
 
 [![Build Status](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-A Docker image to run a self-hosted text embeddings server, powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Provides an OpenAI-compatible `/v1/embeddings` API. Designed to be simple, private, and self-hosted.
+Docker image to run a self-hosted text embeddings server, powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Provides an OpenAI-compatible `/v1/embeddings` API. Designed to be simple, private, and self-hosted.
 
 **Features:**
 
@@ -14,7 +14,6 @@ A Docker image to run a self-hosted text embeddings server, powered by [Hugging 
 - Model management via a helper script (`embed_manage`)
 - Text data stays on your server — no data sent to third parties
 - Offline/air-gapped mode — run without internet access using pre-cached models (`EMBED_LOCAL_ONLY`)
-- Optional API key authentication (`EMBED_API_KEY`)
 - Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml)
 - Persistent model cache via a Docker volume
 - Supported platform: `linux/amd64`
@@ -39,7 +38,7 @@ docker run \
     -d hwdsl2/embeddings-server
 ```
 
-**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 8000:8000` with `-p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted port.
+**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 8000:8000` with `-p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted port. Set `EMBED_API_KEY` in your `env` file when the server is accessible from the public internet.
 
 The default model `BAAI/bge-small-en-v1.5` (~130 MB) is downloaded and cached on first start. Check the logs to confirm the server is ready:
 
@@ -157,7 +156,7 @@ volumes:
   embeddings-data:
 ```
 
-**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"8000:8000/tcp"` to `"127.0.0.1:8000:8000/tcp"` in `docker-compose.yml`, to prevent direct access to the unencrypted port.
+**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"8000:8000/tcp"` to `"127.0.0.1:8000:8000/tcp"` in `docker-compose.yml`, to prevent direct access to the unencrypted port. Set `EMBED_API_KEY` in your `env` file when the server is accessible from the public internet.
 
 ## API reference
 
