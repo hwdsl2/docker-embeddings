@@ -117,7 +117,8 @@ docker run \
 
 `env` 檔案以掛載方式傳入容器，每次重新啟動時自動生效，無需重建容器。
 
-也可透過 `--env-file` 傳入：
+<details>
+<summary>也可透過 <code>--env-file</code> 傳入</summary>
 
 ```bash
 docker run \
@@ -128,6 +129,8 @@ docker run \
     --env-file=embed.env \
     -d hwdsl2/embeddings-server
 ```
+
+</details>
 
 ## 使用 docker-compose
 
@@ -396,7 +399,8 @@ graph LR
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)** | AI 閘道——將請求路由至 OpenAI、Anthropic、Ollama 及 100+ 其他提供商 | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)** | 將文字轉換為自然語音 | `8880` |
 
-### RAG 檢索增強生成範例
+<details>
+<summary><strong>RAG 檢索增強生成範例</strong></summary>
 
 對文件進行向量化以實現語意檢索，並將檢索到的上下文傳送給大型語言模型進行問答：
 
@@ -423,7 +427,10 @@ curl -s http://localhost:4000/v1/chat/completions \
     | jq -r '.choices[0].message.content'
 ```
 
-### 語音對話範例
+</details>
+
+<details>
+<summary><strong>語音對話範例</strong></summary>
 
 將語音問題轉錄為文字，從大型語言模型取得回答，並轉換為語音輸出：
 
@@ -445,6 +452,8 @@ curl -s http://localhost:8880/v1/audio/speech \
     -d "{\"model\":\"tts-1\",\"input\":\"$RESPONSE\",\"voice\":\"af_heart\"}" \
     --output response.mp3
 ```
+
+</details>
 
 ## 技術細節
 

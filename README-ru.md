@@ -117,7 +117,8 @@ docker run \
 
 Файл `env` монтируется в контейнер и применяется при каждом перезапуске без необходимости пересоздавать контейнер.
 
-Также можно передать его через `--env-file`:
+<details>
+<summary>Также можно передать его через <code>--env-file</code></summary>
 
 ```bash
 docker run \
@@ -128,6 +129,8 @@ docker run \
     --env-file=embed.env \
     -d hwdsl2/embeddings-server
 ```
+
+</details>
 
 ## Использование docker-compose
 
@@ -396,7 +399,8 @@ graph LR
 | **[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md)** | AI-шлюз — маршрутизирует запросы к OpenAI, Anthropic, Ollama и 100+ другим провайдерам | `4000` |
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md)** | Синтезирует естественно звучащую речь из текста | `8880` |
 
-### Пример: конвейер RAG
+<details>
+<summary><strong>Пример: конвейер RAG</strong></summary>
 
 Индексируйте документы для семантического поиска, затем извлекайте контекст и отвечайте на вопросы с помощью LLM:
 
@@ -423,7 +427,10 @@ curl -s http://localhost:4000/v1/chat/completions \
     | jq -r '.choices[0].message.content'
 ```
 
-### Пример: голосовой конвейер
+</details>
+
+<details>
+<summary><strong>Пример: голосовой конвейер</strong></summary>
 
 Транскрибируйте голосовой вопрос, получите ответ от LLM и синтезируйте его в речь:
 
@@ -445,6 +452,8 @@ curl -s http://localhost:8880/v1/audio/speech \
     -d "{\"model\":\"tts-1\",\"input\":\"$RESPONSE\",\"voice\":\"af_heart\"}" \
     --output response.mp3
 ```
+
+</details>
 
 ## Технические подробности
 
