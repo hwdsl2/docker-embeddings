@@ -6,13 +6,10 @@ on:
     paths:
       - '.github/workflows/main.yml'
       - '.github/workflows/buildx.yml'
-      - '.github/workflows/shellcheck.yml'
-      - '.github/workflows/embed_test.yml'
       - '.dockerignore'
       - 'Dockerfile'
       - 'manage.sh'
       - 'run.sh'
-      - 'embed.env.example'
 
 jobs:
   shellcheck:
