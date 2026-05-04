@@ -88,7 +88,7 @@ Supported platform: `linux/amd64`.
 
 ## Environment variables
 
-All variables are optional. If not set, secure defaults are used automatically.
+All variables are optional. Set `EMBED_API_KEY` to enable Bearer token authentication.
 
 This Docker image uses the following variables, that can be declared in an `env` file (see [example](embed.env.example)):
 
