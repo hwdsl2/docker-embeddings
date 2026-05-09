@@ -158,6 +158,7 @@ services:
 
 volumes:
   embeddings-data:
+    name: embeddings-data
 ```
 
 **Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"8000:8000/tcp"` to `"127.0.0.1:8000:8000/tcp"` in `docker-compose.yml`, to prevent direct access to the unencrypted port. Set `EMBED_API_KEY` in your `env` file when the server is accessible from the public internet.

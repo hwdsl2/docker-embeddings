@@ -158,6 +158,7 @@ services:
 
 volumes:
   embeddings-data:
+    name: embeddings-data
 ```
 
 **注：** 如需對外網路部署，強烈建議使用[反向代理](#使用反向代理)啟用 HTTPS。此時請將 `docker-compose.yml` 中的 `"8000:8000/tcp"` 改為 `"127.0.0.1:8000:8000/tcp"`，以防止未加密連接埠被直接存取。當伺服器可從公用網際網路存取時，請在 `env` 檔案中設定 `EMBED_API_KEY`。
