@@ -2,7 +2,9 @@
 
 # Text Embeddings API on Docker
 
-[![Build Status](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://img.shields.io/docker/pulls/hwdsl2/embeddings-server)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+
+Part of the [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack) — deploy a complete self-hosted AI stack with a single command.
 
 Docker image to run a self-hosted text embeddings server, powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Provides an OpenAI-compatible `/v1/embeddings` API. Designed to be simple, private, and self-hosted.
 
@@ -20,11 +22,11 @@ Docker image to run a self-hosted text embeddings server, powered by [Hugging Fa
 
 **Also available:**
 
-- AI/Audio: [Whisper (STT)](https://github.com/hwdsl2/docker-whisper), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama)
+- AI/Audio: [Whisper (STT)](https://github.com/hwdsl2/docker-whisper), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling)
 - VPN: [WireGuard](https://github.com/hwdsl2/docker-wireguard), [OpenVPN](https://github.com/hwdsl2/docker-openvpn), [IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server), [Headscale](https://github.com/hwdsl2/docker-headscale)
 - Tools: [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
-**Tip:** Whisper, Kokoro, Embeddings, LiteLLM, Ollama, and MCP Gateway can be [used together](#using-with-other-ai-services) to build a complete, self-hosted AI stack on your own server. Get started quickly with [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack). Deploy the full stack with a single command.
+**Tip:** Whisper, Kokoro, Embeddings, LiteLLM, Ollama, Docling, and MCP Gateway can be [used together](#using-with-other-ai-services) to build a complete, self-hosted AI stack on your own server.
 
 ## Quick start
 
@@ -380,7 +382,7 @@ Your downloaded models are preserved in the `embeddings-data` volume.
 
 ## Using with other AI services
 
-The [Whisper (STT)](https://github.com/hwdsl2/docker-whisper), [Embeddings](https://github.com/hwdsl2/docker-embeddings), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro), [Ollama (LLM)](https://github.com/hwdsl2/docker-ollama), and [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway) images can be combined to build a complete, self-hosted AI stack on your own server — from semantic document search and RAG to full voice I/O. Whisper, Kokoro, and Embeddings run fully locally. Ollama runs all LLM inference locally, so no data is sent to third parties. When using LiteLLM with external providers (e.g., OpenAI, Anthropic), your data will be sent to those providers.
+The Whisper (STT), Embeddings, LiteLLM, Kokoro (TTS), Ollama (LLM), Docling, and MCP Gateway images can be combined to build a complete, self-hosted AI stack on your own server — from semantic document search and RAG to full voice I/O. Whisper, Kokoro, and Embeddings run fully locally. Ollama runs all LLM inference locally, so no data is sent to third parties. When using LiteLLM with external providers (e.g., OpenAI, Anthropic), your data will be sent to those providers.
 
 | Service | Role | Default port |
 |---|---|---|
@@ -390,6 +392,7 @@ The [Whisper (STT)](https://github.com/hwdsl2/docker-whisper), [Embeddings](http
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro)** | Converts text to natural-sounding speech | `8880` |
 | **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama)** | Runs local LLM models (llama3, qwen, mistral, etc.) | `11434` |
 | **[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)** | Exposes AI services as MCP tools for AI assistants (Claude, Cursor, etc.) | `3000` |
+| **[Docling](https://github.com/hwdsl2/docker-docling)** | Converts documents (PDF, DOCX, etc.) to structured text/Markdown | `5001` |
 
 **See also: [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — deploy the full stack with a single command, with ready-made configurations and pipeline examples.
 

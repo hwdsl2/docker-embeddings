@@ -2,7 +2,9 @@
 
 # 文字向量化 API Docker 映像
 
-[![建置狀態](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+[![建置狀態](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://img.shields.io/docker/pulls/hwdsl2/embeddings-server)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+
+[Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-zh-Hant.md) 的一部分 ─ 一條命令部署完整的自託管 AI 技術棧。
 
 使用 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 在 Docker 容器中執行文字向量化伺服器。提供 OpenAI 相容的 `/v1/embeddings` API。簡單、私密、可自架。
 
@@ -20,11 +22,11 @@
 
 **另提供：**
 
-- AI/音訊：[Whisper (STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)
+- AI/音訊：[Whisper (STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh-Hant.md)
 - VPN：[WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-zh-Hant.md)、[OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-zh-Hant.md)、[IPsec VPN](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-zh-Hant.md)、[Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-zh-Hant.md)
 - 工具：[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)
 
-**提示：** Whisper、Kokoro、Embeddings、LiteLLM、Ollama 和 MCP 閘道可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上建立完整的自託管 AI 系統。使用 [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack) 快速開始，一條命令即可部署完整技術堆疊。
+**提示：** Whisper、Kokoro、Embeddings、LiteLLM、Ollama、Docling 和 MCP 閘道可以[搭配使用](#與其他-ai-服務搭配使用)，在您自己的伺服器上建立完整的自託管 AI 系統。
 
 ## 快速開始
 
@@ -380,7 +382,7 @@ docker rm -f embeddings
 
 ## 與其他 AI 服務搭配使用
 
-[Whisper (STT)](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[Embeddings](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)、[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md) 和 [MCP 閘道](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md) 映像可以組合使用，在您自己的伺服器上建立完整的自託管 AI 系統——從語意文件搜尋和檢索增強生成（RAG）到完整的語音輸入/輸出。Whisper、Kokoro 和 Embeddings 完全在本地端執行。Ollama 在本地端執行所有 LLM 推論，無需向第三方傳送資料。如果您將 LiteLLM 設定為使用外部提供商（例如 OpenAI、Anthropic），您的資料將被傳送至這些提供商處理。
+Whisper (STT)、Embeddings、LiteLLM、Kokoro (TTS)、Ollama (LLM)、Docling 和 MCP 閘道 映像可以組合使用，在您自己的伺服器上建立完整的自託管 AI 系統——從語意文件搜尋和檢索增強生成（RAG）到完整的語音輸入/輸出。Whisper、Kokoro 和 Embeddings 完全在本地端執行。Ollama 在本地端執行所有 LLM 推論，無需向第三方傳送資料。如果您將 LiteLLM 設定為使用外部提供商（例如 OpenAI、Anthropic），您的資料將被傳送至這些提供商處理。
 
 | 服務 | 功能 | 預設連接埠 |
 |---|---|---|
@@ -390,6 +392,7 @@ docker rm -f embeddings
 | **[Kokoro (TTS)](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)** | 將文字轉換為自然語音 | `8880` |
 | **[Ollama (LLM)](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)** | 執行本地 LLM 模型（llama3、qwen、mistral 等） | `11434` |
 | **[MCP 閘道](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)** | 將 AI 服務作為 MCP 工具提供給 AI 助手（Claude、Cursor 等） | `3000` |
+| **[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh-Hant.md)** | 將文件（PDF、DOCX 等）轉換為結構化文字/Markdown | `5001` |
 
 **另請參閱：[Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack)** — 一條命令即可部署完整技術堆疊，提供現成的設定和流水線範例。
 
