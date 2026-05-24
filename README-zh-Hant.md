@@ -30,7 +30,8 @@
 
 ## 社群
 
-- 討論與展示：[r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/)
+- 訂閱專案更新：[Self-Hosted Stack](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai)
+- 社群討論與展示：[r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/)
 
 ## 快速開始
 
