@@ -1,18 +1,19 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# API текстовых эмбеддингов на Docker
+# API текстовых эмбеддингов и переранжирования на Docker
 
 [![Статус сборки](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
 Часть [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-ru.md) — разверните полный самостоятельно размещённый AI-стек одной командой.
 
-Docker-образ для запуска самостоятельно размещённого сервера текстовых эмбеддингов на базе [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Предоставляет совместимый с OpenAI API `/v1/embeddings`. Простой, приватный, для самостоятельного развёртывания.
+Docker-образ для запуска самостоятельно размещённого сервера текстовых эмбеддингов и переранжирования на базе [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Предоставляет совместимый с OpenAI API `/v1/embeddings` и эндпоинт `/rerank`. Простой, приватный, для самостоятельного развёртывания.
 
 **Возможности:**
 
 - Совместимый с OpenAI эндпоинт `POST /v1/embeddings` — любое приложение, использующее OpenAI Embeddings API, переключается с изменением одной строки
 - На базе [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) — высокопроизводительного сервера эмбеддингов на Rust
 - Поддержка популярных моделей: `BAAI/bge-small-en-v1.5`, `BAAI/bge-m3`, `nomic-embed-text-v1.5` и других
+- Опциональное переранжирование через `POST /rerank` — включите cross-encoder модель для повторной оценки найденных документов и повышения точности поиска
 - Управление моделями через вспомогательный скрипт (`embed_manage`)
 - Текстовые данные остаются на вашем сервере — никакие данные не отправляются третьим сторонам
 - Офлайн-режим — работа без доступа к интернету с предварительно кэшированными моделями (`EMBED_LOCAL_ONLY`)
@@ -30,7 +31,7 @@ Docker-образ для запуска самостоятельно разме�
 
 ## Сообщество
 
-- Подпишитесь на обновления проекта: [Self-Hosted Stack](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai)
+- Подпишитесь на обновления проекта (1–2 письма в месяц): [Self-Hosted Stack](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai)
 - Обсуждения и примеры в сообществе: [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/)
 
 ## Быстрый старт
@@ -106,6 +107,11 @@ docker image tag quay.io/hwdsl2/embeddings-server hwdsl2/embeddings-server
 | `EMBED_API_KEY` | Опциональный Bearer-токен. Если задан, все запросы должны содержать `Authorization: Bearer <key>`. | *(не задан)* |
 | `EMBED_HF_TOKEN` | Токен HuggingFace Hub для доступа к приватным или ограниченным моделям. Не требуется для публичных моделей. | *(не задан)* |
 | `EMBED_LOCAL_ONLY` | При установке любого непустого значения (например, `true`) отключает все загрузки моделей с HuggingFace. Для офлайн- или изолированных развёртываний с предварительно кэшированными моделями. | *(не задан)* |
+| `EMBED_ENABLED` | Установите `false` для отключения процесса эмбеддингов (для режима «только переранжирование»). | `true` |
+| `RERANK_ENABLED` | Установите `true` для запуска сервера переранжирования (cross-encoder модель на отдельном порту). | *(не задан)* |
+| `RERANK_MODEL` | ID модели HuggingFace cross-encoder для переранжирования. См. [модели переранжирования](#переранжирование). | `BAAI/bge-reranker-v2-m3` |
+| `RERANK_PORT` | HTTP-порт для API переранжирования. По умолчанию `8000`, если эмбеддинги отключены. | `8001` |
+| `RERANK_API_KEY` | Опциональный Bearer-токен для переранжирования. Если не задан, используется `EMBED_API_KEY`. | *(откат к `EMBED_API_KEY`)* |
 
 **Примечание:** В файле `env` значения можно заключать в одинарные кавычки, например `VAR='value'`. Не используйте пробелы вокруг `=`. При изменении `EMBED_PORT` обновите флаг `-p` в команде `docker run` соответствующим образом.
 
@@ -159,6 +165,7 @@ services:
     restart: always
     ports:
       - "8000:8000/tcp"  # Для хост-обратного прокси замените на "127.0.0.1:8000:8000/tcp"
+      # - "8001:8001/tcp"  # API переранжирования (раскомментируйте при RERANK_ENABLED=true в embed.env)
     volumes:
       - embeddings-data:/var/lib/embeddings
       - ./embed.env:/embed.env:ro
@@ -246,6 +253,52 @@ GET /info
 curl http://IP_вашего_сервера:8000/info
 ```
 
+### Переранжирование документов
+
+> Требуется `RERANK_ENABLED=true` в файле env. Переранжирование работает на порту 8001 по умолчанию.
+
+```
+POST /rerank
+Content-Type: application/json
+```
+
+**Параметры:**
+
+| Параметр | Тип | Обязательный | Описание |
+|---|---|---|---|
+| `query` | строка | ✅ | Поисковый запрос для ранжирования документов. |
+| `texts` | массив строк | ✅ | Документы для переранжирования. |
+| `raw_scores` | булево | | Если `true`, возвращает необработанные оценки cross-encoder вместо нормализованных. По умолчанию: `false`. |
+| `truncate` | булево | | Если `true`, обрезает входные данные, превышающие максимальную длину модели. По умолчанию: `true`. |
+
+**Пример:**
+
+```bash
+curl http://IP_вашего_сервера:8001/rerank \
+    -H "Content-Type: application/json" \
+    -d '{
+      "query": "Что такое глубокое обучение?",
+      "texts": [
+        "Глубокое обучение — это подмножество машинного обучения...",
+        "Сегодня солнечная погода, температура до 25°C.",
+        "Нейронные сети вдохновлены устройством человеческого мозга."
+      ],
+      "raw_scores": false
+    }'
+```
+
+**Ответ:**
+
+```json
+[
+  {"index": 0, "score": 0.98},
+  {"index": 2, "score": 0.72},
+  {"index": 1, "score": 0.01}
+]
+```
+
+Результаты отсортированы по убыванию оценки релевантности (наиболее релевантный первый). Используйте для переоценки документов, полученных при поиске по эмбеддингам.
+
 ### Интерактивная документация по API
 
 Интерактивный Swagger UI доступен по адресу:
@@ -254,15 +307,24 @@ curl http://IP_вашего_сервера:8000/info
 http://IP_вашего_сервера:8000/docs
 ```
 
+Если переранжирование включено, у него также есть собственная интерактивная документация:
+
+```
+http://IP_вашего_сервера:8001/docs
+```
+
 ## Постоянные данные
 
 Все данные сервера хранятся в Docker-томе (`/var/lib/embeddings` внутри контейнера):
 
 ```
 /var/lib/embeddings/
-├── models--BAAI--bge-small-en-v1.5/   # Кэшированные файлы модели (загружены с HuggingFace)
+├── models--BAAI--bge-small-en-v1.5/   # Кэшированные файлы модели эмбеддингов
+├── models--BAAI--bge-reranker-v2-m3/  # Кэшированные файлы модели переранжирования (если включено)
 ├── .port                # Активный порт (используется embed_manage)
 ├── .model               # ID активной модели (используется embed_manage)
+├── .rerank_model        # Активная модель переранжирования (используется embed_manage)
+├── .rerank_port         # Активный порт переранжирования (используется embed_manage)
 └── .server_addr         # Кэшированный IP сервера (используется embed_manage)
 ```
 
@@ -284,10 +346,17 @@ docker exec embeddings embed_manage --showinfo
 docker exec embeddings embed_manage --listmodels
 ```
 
+**Список рекомендуемых моделей переранжирования:**
+
+```bash
+docker exec embeddings embed_manage --listrerankers
+```
+
 **Предварительная загрузка модели:**
 
 ```bash
 docker exec embeddings embed_manage --pullmodel BAAI/bge-base-en-v1.5
+docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 ```
 
 ## Смена модели
@@ -320,6 +389,59 @@ docker exec embeddings embed_manage --pullmodel BAAI/bge-base-en-v1.5
 > **Совет:** Для неанглоязычных или многоязычных задач рекомендуется использовать `BAAI/bge-m3` или `nomic-ai/nomic-embed-text-v1.5`. Для RAG-конвейеров на английском языке `BAAI/bge-base-en-v1.5` обеспечивает хороший баланс между точностью и потреблением ресурсов.
 
 Модели кэшируются в Docker-томе `/var/lib/embeddings` и загружаются только один раз. Можно использовать любую модель HuggingFace, поддерживаемую TEI — см. [список поддерживаемых моделей TEI](https://huggingface.co/models?pipeline_tag=feature-extraction).
+
+## Переранжирование
+
+Переранжирование повышает качество поиска, переоценивая документы с помощью cross-encoder модели. Включите его, задав `RERANK_ENABLED=true` в файле env.
+
+### Быстрая настройка
+
+1. Добавьте в `embed.env`:
+   ```bash
+   RERANK_ENABLED=true
+   ```
+
+2. Откройте порт 8001 (добавьте `-p 8001:8001` в команду `docker run` или раскомментируйте порт в `docker-compose.yml`).
+
+3. Перезапустите контейнер:
+   ```bash
+   docker restart embeddings
+   ```
+
+Модель переранжирования (`BAAI/bge-reranker-v2-m3`, ~560 МБ) загружается при первом запуске.
+
+### Режимы работы
+
+| Режим | Конфигурация | ОЗУ (прибл.) |
+|---|---|---|
+| Только эмбеддинги (по умолчанию) | `RERANK_ENABLED` не задан | ~250 МБ (bge-small) |
+| Эмбеддинги + Переранжирование | `RERANK_ENABLED=true` | ~850 МБ (bge-small + bge-reranker-v2-m3) |
+| Только переранжирование | `EMBED_ENABLED=false`, `RERANK_ENABLED=true` | ~600 МБ (bge-reranker-v2-m3) |
+
+В режиме **«только переранжирование»** сервер переранжирования по умолчанию слушает порт 8000 (так как процесс эмбеддингов отключён), если `RERANK_PORT` не задан явно.
+
+### Рекомендуемые модели переранжирования
+
+| Модель | Диск | ОЗУ (прибл.) | Примечания |
+|---|---|---|---|
+| `BAAI/bge-reranker-v2-m3` | ~560 МБ | ~600 МБ | Многоязычная; высокая точность — **по умолчанию** |
+| `BAAI/bge-reranker-base` | ~440 МБ | ~500 МБ | Английский; хороший баланс |
+| `BAAI/bge-reranker-large` | ~1.3 ГБ | ~1.5 ГБ | Английский; наивысшая точность |
+| `cross-encoder/ms-marco-MiniLM-L6-v2` | ~90 МБ | ~150 МБ | Очень компактная; быстрая; английский |
+
+### Использование с LiteLLM
+
+Для использования переранжирования с [LiteLLM](https://github.com/hwdsl2/docker-litellm) добавьте его как модель в конфигурацию LiteLLM:
+
+```yaml
+model_list:
+  - model_name: rerank
+    litellm_params:
+      model: huggingface/BAAI/bge-reranker-v2-m3
+      api_base: http://embeddings:8001
+```
+
+Затем вызывайте эндпоинт `/rerank` LiteLLM — он будет проксировать запросы на ваш самостоятельно размещённый сервер переранжирования.
 
 ## Использование обратного прокси
 
@@ -406,6 +528,7 @@ docker rm -f embeddings
 - Базовый образ: `ghcr.io/huggingface/text-embeddings-inference:cpu-latest` (Debian)
 - Движок эмбеддингов: [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) (на Rust, высокая производительность)
 - API: совместимый с OpenAI эндпоинт `/v1/embeddings` (предоставляется напрямую TEI)
+- Переранжирование: TEI эндпоинт `/rerank` через второй процесс с загруженной cross-encoder моделью
 - Директория данных: `/var/lib/embeddings` (Docker-том)
 - Хранилище моделей: формат HuggingFace Hub внутри тома — загружается один раз, переиспользуется при перезапусках
 - Управление моделями: Python (`huggingface_hub`) для предварительной загрузки через `embed_manage --pullmodel`

@@ -1,18 +1,19 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# 文字向量化 API Docker 映像
+# 文字向量化與重排序 API Docker 映像
 
 [![建置狀態](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
 [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack/blob/main/README-zh-Hant.md) 的一部分 ─ 一條命令部署完整的自託管 AI 技術棧。
 
-使用 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 在 Docker 容器中執行文字向量化伺服器。提供 OpenAI 相容的 `/v1/embeddings` API。簡單、私密、可自架。
+使用 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 在 Docker 容器中執行文字向量化與重排序伺服器。提供 OpenAI 相容的 `/v1/embeddings` API 和 `/rerank` 端點。簡單、私密、可自架。
 
 **功能特性：**
 
 - OpenAI 相容的 `POST /v1/embeddings` 端點 — 任何呼叫 OpenAI Embeddings API 的應用程式只需修改一行設定即可切換
 - 由 [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) 驅動 — 基於 Rust 的高效能向量化伺服器
 - 支援主流向量化模型：`BAAI/bge-small-en-v1.5`、`BAAI/bge-m3`、`nomic-embed-text-v1.5` 等
+- 可選的重排序端點（`POST /rerank`）— 啟用交叉編碼器模型對檢索文件重新評分，提升檢索精度
 - 透過輔助腳本 (`embed_manage`) 管理模型
 - 文字資料留在您的伺服器上，不傳送給第三方
 - 離線/隔離網路模式 — 使用預先快取的模型無需網際網路連線 (`EMBED_LOCAL_ONLY`)
@@ -30,7 +31,7 @@
 
 ## 社群
 
-- 訂閱專案更新：[Self-Hosted Stack](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai)
+- 訂閱專案更新（每月 1-2 封郵件）：[Self-Hosted Stack](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai)
 - 社群討論與展示：[r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/)
 
 ## 快速開始
@@ -106,6 +107,11 @@ docker image tag quay.io/hwdsl2/embeddings-server hwdsl2/embeddings-server
 | `EMBED_API_KEY` | 選填的 Bearer 權杖。設定後所有請求須包含 `Authorization: Bearer <key>`。 | *（未設定）* |
 | `EMBED_HF_TOKEN` | 用於存取私有或受限模型的 HuggingFace Hub 權杖。公開模型無需此項。 | *（未設定）* |
 | `EMBED_LOCAL_ONLY` | 設為任意非空值（如 `true`）時，停用所有 HuggingFace 模型下載。適用於預先快取模型的離線或隔離網路部署。 | *（未設定）* |
+| `EMBED_ENABLED` | 設為 `false` 可停用向量化程序（用於僅重排序模式）。 | `true` |
+| `RERANK_ENABLED` | 設為 `true` 可啟用重排序伺服器（在獨立連接埠執行交叉編碼器模型）。 | *（未設定）* |
+| `RERANK_MODEL` | 用於重排序的 HuggingFace 交叉編碼器模型 ID。請參閱[重排序模型](#重排序)。 | `BAAI/bge-reranker-v2-m3` |
+| `RERANK_PORT` | 重排序 API 的 HTTP 連接埠。如向量化已停用，則預設為 `8000`。 | `8001` |
+| `RERANK_API_KEY` | 重排序的選填 Bearer 權杖。未設定時回退到 `EMBED_API_KEY`。 | *（回退到 `EMBED_API_KEY`）* |
 
 **注：** 在 `env` 檔案中，值可用單引號括起，例如 `VAR='value'`。`=` 兩側不要有空格。若更改 `EMBED_PORT`，請相應更新 `docker run` 指令中的 `-p` 參數。
 
@@ -159,6 +165,7 @@ services:
     restart: always
     ports:
       - "8000:8000/tcp"  # 若使用主機反向代理，改為 "127.0.0.1:8000:8000/tcp"
+      # - "8001:8001/tcp"  # 重排序 API（如在 embed.env 中設定 RERANK_ENABLED=true 則取消註解）
     volumes:
       - embeddings-data:/var/lib/embeddings
       - ./embed.env:/embed.env:ro
@@ -246,6 +253,52 @@ GET /info
 curl http://您的伺服器IP:8000/info
 ```
 
+### 重排序文件
+
+> 需要在 env 檔案中設定 `RERANK_ENABLED=true`。重排序服務預設執行在連接埠 8001。
+
+```
+POST /rerank
+Content-Type: application/json
+```
+
+**參數：**
+
+| 參數 | 類型 | 必填 | 說明 |
+|---|---|---|---|
+| `query` | 字串 | ✅ | 用於對文件進行排序的搜尋查詢。 |
+| `texts` | 字串陣列 | ✅ | 待重排序的文件。 |
+| `raw_scores` | 布林值 | | 如為 `true`，回傳原始交叉編碼器分數而非歸一化分數。預設：`false`。 |
+| `truncate` | 布林值 | | 如為 `true`，截斷超出模型最大長度的輸入。預設：`true`。 |
+
+**範例：**
+
+```bash
+curl http://您的伺服器IP:8001/rerank \
+    -H "Content-Type: application/json" \
+    -d '{
+      "query": "什麼是深度學習？",
+      "texts": [
+        "深度學習是機器學習的一個子集...",
+        "今天天氣晴朗，最高氣溫 25°C。",
+        "神經網路的靈感來自人腦。"
+      ],
+      "raw_scores": false
+    }'
+```
+
+**回應：**
+
+```json
+[
+  {"index": 0, "score": 0.98},
+  {"index": 2, "score": 0.72},
+  {"index": 1, "score": 0.01}
+]
+```
+
+結果按相關性分數降序排列（最高分在前）。可用於對向量相似性搜尋回傳的文件進行二次排序。
+
 ### 互動式 API 文件
 
 可在以下網址存取互動式 Swagger UI：
@@ -254,15 +307,24 @@ curl http://您的伺服器IP:8000/info
 http://您的伺服器IP:8000/docs
 ```
 
+如啟用了重排序，重排序服務也有其獨立的互動式文件：
+
+```
+http://您的伺服器IP:8001/docs
+```
+
 ## 持久化資料
 
 所有伺服器資料儲存在 Docker 資料卷（容器內的 `/var/lib/embeddings`）中：
 
 ```
 /var/lib/embeddings/
-├── models--BAAI--bge-small-en-v1.5/   # 已快取的模型檔案（從 HuggingFace 下載）
+├── models--BAAI--bge-small-en-v1.5/   # 已快取的向量化模型檔案
+├── models--BAAI--bge-reranker-v2-m3/  # 已快取的重排序模型檔案（如已啟用）
 ├── .port                # 目前連接埠（供 embed_manage 使用）
 ├── .model               # 目前模型 ID（供 embed_manage 使用）
+├── .rerank_model        # 目前重排序模型（供 embed_manage 使用）
+├── .rerank_port         # 目前重排序連接埠（供 embed_manage 使用）
 └── .server_addr         # 已快取的伺服器 IP（供 embed_manage 使用）
 ```
 
@@ -284,10 +346,17 @@ docker exec embeddings embed_manage --showinfo
 docker exec embeddings embed_manage --listmodels
 ```
 
+**列出推薦重排序模型：**
+
+```bash
+docker exec embeddings embed_manage --listrerankers
+```
+
 **預先下載模型：**
 
 ```bash
 docker exec embeddings embed_manage --pullmodel BAAI/bge-base-en-v1.5
+docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 ```
 
 ## 切換模型
@@ -320,6 +389,59 @@ docker exec embeddings embed_manage --pullmodel BAAI/bge-base-en-v1.5
 > **提示：** 對於非英語或多語言使用情境，推薦使用 `BAAI/bge-m3` 或 `nomic-ai/nomic-embed-text-v1.5`。對於英語 RAG 場景，`BAAI/bge-base-en-v1.5` 在精度與資源之間取得了良好平衡。
 
 模型快取在 `/var/lib/embeddings` Docker 資料卷中，僅需下載一次。任何 TEI 支援的 HuggingFace 模型均可使用，參見 [TEI 支援的模型清單](https://huggingface.co/models?pipeline_tag=feature-extraction)。
+
+## 重排序
+
+重排序透過交叉編碼器模型對文件重新評分，從而提升檢索品質。在 env 檔案中設定 `RERANK_ENABLED=true` 即可啟用。
+
+### 快速設定
+
+1. 在 `embed.env` 中新增：
+   ```bash
+   RERANK_ENABLED=true
+   ```
+
+2. 開放連接埠 8001（在 `docker run` 指令中新增 `-p 8001:8001`，或在 `docker-compose.yml` 中取消註解該連接埠）。
+
+3. 重新啟動容器：
+   ```bash
+   docker restart embeddings
+   ```
+
+重排序模型（`BAAI/bge-reranker-v2-m3`，約 560 MB）將在首次啟動時下載。
+
+### 執行模式
+
+| 模式 | 設定 | 記憶體（約） |
+|---|---|---|
+| 僅向量化（預設） | `RERANK_ENABLED` 未設定 | ~250 MB (bge-small) |
+| 向量化 + 重排序 | `RERANK_ENABLED=true` | ~850 MB (bge-small + bge-reranker-v2-m3) |
+| 僅重排序 | `EMBED_ENABLED=false`, `RERANK_ENABLED=true` | ~600 MB (bge-reranker-v2-m3) |
+
+在**僅重排序模式**下，重排序服務預設監聽連接埠 8000（因為向量化程序已停用），除非明確設定了 `RERANK_PORT`。
+
+### 推薦重排序模型
+
+| 模型 | 磁碟空間 | 記憶體（約） | 說明 |
+|---|---|---|---|
+| `BAAI/bge-reranker-v2-m3` | ~560 MB | ~600 MB | 多語言；精度高 — **預設** |
+| `BAAI/bge-reranker-base` | ~440 MB | ~500 MB | 英語；良好平衡 |
+| `BAAI/bge-reranker-large` | ~1.3 GB | ~1.5 GB | 英語；最高精度 |
+| `cross-encoder/ms-marco-MiniLM-L6-v2` | ~90 MB | ~150 MB | 體積最小；速度快；英語 |
+
+### 與 LiteLLM 搭配使用
+
+要將重排序服務與 [LiteLLM](https://github.com/hwdsl2/docker-litellm) 搭配使用，請在 LiteLLM 設定中新增重排序模型：
+
+```yaml
+model_list:
+  - model_name: rerank
+    litellm_params:
+      model: huggingface/BAAI/bge-reranker-v2-m3
+      api_base: http://embeddings:8001
+```
+
+然後呼叫 LiteLLM 的 `/rerank` 端點，它將代理轉發到您的自架重排序服務。
 
 ## 使用反向代理
 
@@ -406,6 +528,7 @@ Whisper (STT)、Embeddings、LiteLLM、Kokoro (TTS)、Ollama (LLM)、Docling 和
 - 基礎映像：`ghcr.io/huggingface/text-embeddings-inference:cpu-latest`（Debian）
 - 向量化引擎：[Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference)（基於 Rust，高效能）
 - API：OpenAI 相容的 `/v1/embeddings` 端點（由 TEI 直接提供）
+- 重排序：TEI `/rerank` 端點，透過載入交叉編碼器模型的第二個程序提供
 - 資料目錄：`/var/lib/embeddings`（Docker 資料卷）
 - 模型儲存：HuggingFace Hub 格式，儲存在資料卷中——下載一次，重新啟動後繼續使用
 - 模型管理：Python（`huggingface_hub`）透過 `embed_manage --pullmodel` 預先下載

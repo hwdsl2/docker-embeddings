@@ -1,18 +1,19 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# Text Embeddings API on Docker
+# Text Embeddings & Reranking API on Docker
 
 [![Build Status](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
 Part of the [Docker AI Stack](https://github.com/hwdsl2/docker-ai-stack) — deploy a complete self-hosted AI stack with a single command.
 
-Docker image to run a self-hosted text embeddings server, powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Provides an OpenAI-compatible `/v1/embeddings` API. Designed to be simple, private, and self-hosted.
+Docker image to run a self-hosted text embeddings and reranking server, powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Provides an OpenAI-compatible `/v1/embeddings` API and a `/rerank` endpoint. Designed to be simple, private, and self-hosted.
 
 **Features:**
 
 - OpenAI-compatible `POST /v1/embeddings` endpoint — any app using the OpenAI embeddings API switches with a one-line change
 - Powered by [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) — a high-performance Rust-based embeddings server
 - Supports popular embedding models: `BAAI/bge-small-en-v1.5`, `BAAI/bge-m3`, `nomic-embed-text-v1.5` and more
+- Optional reranking via `POST /rerank` — enable a cross-encoder model to re-score retrieved documents for higher retrieval accuracy
 - Model management via a helper script (`embed_manage`)
 - Text data stays on your server — no data sent to third parties
 - Offline/air-gapped mode — run without internet access using pre-cached models (`EMBED_LOCAL_ONLY`)
@@ -30,7 +31,7 @@ Docker image to run a self-hosted text embeddings server, powered by [Hugging Fa
 
 ## Community
 
-- Subscribe for project updates: [Self-Hosted Stack](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai)
+- Subscribe for project updates (1–2 emails/month): [Self-Hosted Stack](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai)
 - Community discussions and showcases: [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/)
 
 ## Quick start
@@ -106,6 +107,11 @@ This Docker image uses the following variables, that can be declared in an `env`
 | `EMBED_API_KEY` | Optional Bearer token. If set, all API requests must include `Authorization: Bearer <key>`. | *(not set)* |
 | `EMBED_HF_TOKEN` | HuggingFace Hub token for accessing private or gated models. Not required for public models. | *(not set)* |
 | `EMBED_LOCAL_ONLY` | When set to any non-empty value (e.g. `true`), disables all HuggingFace model downloads. For offline or air-gapped deployments with pre-cached models. | *(not set)* |
+| `EMBED_ENABLED` | Set to `false` to disable the embeddings process (for rerank-only mode). | `true` |
+| `RERANK_ENABLED` | Set to `true` to enable the reranking server (cross-encoder model on a separate port). | *(not set)* |
+| `RERANK_MODEL` | HuggingFace cross-encoder model ID for reranking. See [reranker models](#reranking). | `BAAI/bge-reranker-v2-m3` |
+| `RERANK_PORT` | HTTP port for the reranker API. Defaults to `8000` if embeddings is disabled. | `8001` |
+| `RERANK_API_KEY` | Optional Bearer token for the reranker. Falls back to `EMBED_API_KEY` if unset. | *(falls back to `EMBED_API_KEY`)* |
 
 **Note:** In your `env` file, you may enclose values in single quotes, e.g. `VAR='value'`. Do not add spaces around `=`. If you change `EMBED_PORT`, update the `-p` flag in the `docker run` command accordingly.
 
@@ -159,6 +165,7 @@ services:
     restart: always
     ports:
       - "8000:8000/tcp"  # For a host-based reverse proxy, change to "127.0.0.1:8000:8000/tcp"
+      # - "8001:8001/tcp"  # Reranker API (uncomment if RERANK_ENABLED=true in embed.env)
     volumes:
       - embeddings-data:/var/lib/embeddings
       - ./embed.env:/embed.env:ro
@@ -246,6 +253,52 @@ Returns the active model ID, maximum input length, and server version.
 curl http://your_server_ip:8000/info
 ```
 
+### Rerank documents
+
+> Requires `RERANK_ENABLED=true` in your env file. The reranker runs on port 8001 by default.
+
+```
+POST /rerank
+Content-Type: application/json
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `query` | string | ✅ | The search query to rank documents against. |
+| `texts` | array of strings | ✅ | The documents to rerank. |
+| `raw_scores` | boolean | | If `true`, returns raw cross-encoder scores instead of normalized scores. Default: `false`. |
+| `truncate` | boolean | | If `true`, truncates inputs that exceed the model's max length. Default: `true`. |
+
+**Example:**
+
+```bash
+curl http://your_server_ip:8001/rerank \
+    -H "Content-Type: application/json" \
+    -d '{
+      "query": "What is deep learning?",
+      "texts": [
+        "Deep learning is a subset of machine learning...",
+        "The weather today is sunny with a high of 75°F.",
+        "Neural networks are inspired by the human brain."
+      ],
+      "raw_scores": false
+    }'
+```
+
+**Response:**
+
+```json
+[
+  {"index": 0, "score": 0.98},
+  {"index": 2, "score": 0.72},
+  {"index": 1, "score": 0.01}
+]
+```
+
+Results are sorted by relevance score (highest first). Use this to re-rank documents retrieved by embeddings similarity search.
+
 ### Interactive API docs
 
 An interactive Swagger UI is available at:
@@ -254,15 +307,24 @@ An interactive Swagger UI is available at:
 http://your_server_ip:8000/docs
 ```
 
+If reranking is enabled, the reranker also has its own interactive docs at:
+
+```
+http://your_server_ip:8001/docs
+```
+
 ## Persistent data
 
 All server data is stored in the Docker volume (`/var/lib/embeddings` inside the container):
 
 ```
 /var/lib/embeddings/
-├── models--BAAI--bge-small-en-v1.5/   # Cached model files (downloaded from HuggingFace)
+├── models--BAAI--bge-small-en-v1.5/   # Cached embedding model files
+├── models--BAAI--bge-reranker-v2-m3/  # Cached reranker model files (if enabled)
 ├── .port                # Active port (used by embed_manage)
 ├── .model               # Active model ID (used by embed_manage)
+├── .rerank_model        # Active reranker model (used by embed_manage)
+├── .rerank_port         # Active reranker port (used by embed_manage)
 └── .server_addr         # Cached server IP (used by embed_manage)
 ```
 
@@ -284,10 +346,17 @@ docker exec embeddings embed_manage --showinfo
 docker exec embeddings embed_manage --listmodels
 ```
 
+**List recommended reranker models:**
+
+```bash
+docker exec embeddings embed_manage --listrerankers
+```
+
 **Pre-download a model:**
 
 ```bash
 docker exec embeddings embed_manage --pullmodel BAAI/bge-base-en-v1.5
+docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 ```
 
 ## Switching the model
@@ -320,6 +389,59 @@ To change the active model:
 > **Tip:** `BAAI/bge-m3` and `nomic-ai/nomic-embed-text-v1.5` are recommended for non-English or multilingual workloads. For English RAG pipelines, `BAAI/bge-base-en-v1.5` offers a good accuracy-to-resource balance.
 
 Models are cached in the `/var/lib/embeddings` Docker volume and only downloaded once. Any HuggingFace model supported by TEI can be used — see the [TEI supported models list](https://huggingface.co/models?pipeline_tag=feature-extraction).
+
+## Reranking
+
+Reranking improves retrieval quality by re-scoring documents with a cross-encoder model. Enable it by setting `RERANK_ENABLED=true` in your env file.
+
+### Quick setup
+
+1. Add to your `embed.env`:
+   ```bash
+   RERANK_ENABLED=true
+   ```
+
+2. Expose port 8001 (add `-p 8001:8001` to your `docker run` command, or uncomment the port in `docker-compose.yml`).
+
+3. Restart the container:
+   ```bash
+   docker restart embeddings
+   ```
+
+The reranker model (`BAAI/bge-reranker-v2-m3`, ~560 MB) is downloaded on first start.
+
+### Operating modes
+
+| Mode | Configuration | Memory (approx) |
+|---|---|---|
+| Embeddings only (default) | `RERANK_ENABLED` unset | ~250 MB (bge-small) |
+| Embeddings + Reranking | `RERANK_ENABLED=true` | ~850 MB (bge-small + bge-reranker-v2-m3) |
+| Reranking only | `EMBED_ENABLED=false`, `RERANK_ENABLED=true` | ~600 MB (bge-reranker-v2-m3) |
+
+In **rerank-only mode**, the reranker listens on port 8000 by default (since the embeddings process is disabled), unless `RERANK_PORT` is explicitly set.
+
+### Recommended reranker models
+
+| Model | Disk | RAM (approx) | Notes |
+|---|---|---|---|
+| `BAAI/bge-reranker-v2-m3` | ~560 MB | ~600 MB | Multilingual; strong accuracy — **default** |
+| `BAAI/bge-reranker-base` | ~440 MB | ~500 MB | English; good balance |
+| `BAAI/bge-reranker-large` | ~1.3 GB | ~1.5 GB | English; highest accuracy |
+| `cross-encoder/ms-marco-MiniLM-L6-v2` | ~90 MB | ~150 MB | Very small; fast; English |
+
+### Using with LiteLLM
+
+To use the reranker with [LiteLLM](https://github.com/hwdsl2/docker-litellm), add it as a rerank model in your LiteLLM config:
+
+```yaml
+model_list:
+  - model_name: rerank
+    litellm_params:
+      model: huggingface/BAAI/bge-reranker-v2-m3
+      api_base: http://embeddings:8001
+```
+
+Then call the LiteLLM `/rerank` endpoint, and it will proxy to your self-hosted reranker.
 
 ## Using a reverse proxy
 
@@ -406,6 +528,7 @@ The Whisper (STT), Embeddings, LiteLLM, Kokoro (TTS), Ollama (LLM), Docling, and
 - Base image: `ghcr.io/huggingface/text-embeddings-inference:cpu-latest` (Debian)
 - Embeddings engine: [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) (Rust-based, high-performance)
 - API: OpenAI-compatible `/v1/embeddings` endpoint (served directly by TEI)
+- Reranking: TEI `/rerank` endpoint via a second process loaded with a cross-encoder model
 - Data directory: `/var/lib/embeddings` (Docker volume)
 - Model storage: HuggingFace Hub format inside the volume — downloaded once, reused on restarts
 - Model management: Python (`huggingface_hub`) for pre-download via `embed_manage --pullmodel`
