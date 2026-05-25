@@ -25,7 +25,7 @@ COPY ./LICENSE.md /opt/src/LICENSE.md
 RUN chmod 755 /opt/src/run.sh /opt/src/manage.sh \
     && ln -s /opt/src/manage.sh /usr/local/bin/embed_manage
 
-EXPOSE 8000/tcp
+EXPOSE 8000/tcp 8001/tcp
 VOLUME ["/var/lib/embeddings"]
 ENTRYPOINT []
 CMD ["/opt/src/run.sh"]
@@ -40,8 +40,8 @@ LABEL maintainer="Lin Song <linsongui@gmail.com>" \
     org.opencontainers.image.version="$VERSION" \
     org.opencontainers.image.revision="$VCS_REF" \
     org.opencontainers.image.authors="Lin Song <linsongui@gmail.com>" \
-    org.opencontainers.image.title="Text Embeddings API on Docker" \
-    org.opencontainers.image.description="Docker image to run a self-hosted text embeddings server powered by Hugging Face TEI, providing an OpenAI-compatible /v1/embeddings API." \
+    org.opencontainers.image.title="Text Embeddings & Reranking API on Docker" \
+    org.opencontainers.image.description="Docker image to run a self-hosted text embeddings and reranking server powered by Hugging Face TEI, providing an OpenAI-compatible /v1/embeddings API and a /rerank endpoint." \
     org.opencontainers.image.url="https://github.com/hwdsl2/docker-embeddings" \
     org.opencontainers.image.source="https://github.com/hwdsl2/docker-embeddings" \
     org.opencontainers.image.documentation="https://github.com/hwdsl2/docker-embeddings"

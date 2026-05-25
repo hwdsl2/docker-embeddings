@@ -52,24 +52,88 @@ EMBED_HF_TOKEN=$(nospaces "$EMBED_HF_TOKEN")
 EMBED_HF_TOKEN=$(noquotes "$EMBED_HF_TOKEN")
 EMBED_LOCAL_ONLY=$(nospaces "$EMBED_LOCAL_ONLY")
 EMBED_LOCAL_ONLY=$(noquotes "$EMBED_LOCAL_ONLY")
+EMBED_ENABLED=$(nospaces "$EMBED_ENABLED")
+EMBED_ENABLED=$(noquotes "$EMBED_ENABLED")
+
+RERANK_ENABLED=$(nospaces "$RERANK_ENABLED")
+RERANK_ENABLED=$(noquotes "$RERANK_ENABLED")
+RERANK_MODEL=$(nospaces "$RERANK_MODEL")
+RERANK_MODEL=$(noquotes "$RERANK_MODEL")
+RERANK_PORT=$(nospaces "$RERANK_PORT")
+RERANK_PORT=$(noquotes "$RERANK_PORT")
+RERANK_API_KEY=$(nospaces "$RERANK_API_KEY")
+RERANK_API_KEY=$(noquotes "$RERANK_API_KEY")
 
 # Apply defaults
 [ -z "$EMBED_MODEL" ] && EMBED_MODEL=BAAI/bge-small-en-v1.5
 [ -z "$EMBED_PORT" ]  && EMBED_PORT=8000
+[ -z "$RERANK_MODEL" ] && RERANK_MODEL=BAAI/bge-reranker-v2-m3
 
-# Validate port
-if ! check_port "$EMBED_PORT"; then
-  exiterr "EMBED_PORT must be an integer between 1 and 65535."
+# Determine if embeddings is enabled (default: true)
+embed_active=1
+if [ "$EMBED_ENABLED" = "false" ] || [ "$EMBED_ENABLED" = "False" ] || [ "$EMBED_ENABLED" = "FALSE" ] || [ "$EMBED_ENABLED" = "0" ]; then
+  embed_active=0
+fi
+
+# Determine if reranking is enabled (default: disabled)
+rerank_active=0
+if [ "$RERANK_ENABLED" = "true" ] || [ "$RERANK_ENABLED" = "True" ] || [ "$RERANK_ENABLED" = "TRUE" ] || [ "$RERANK_ENABLED" = "1" ]; then
+  rerank_active=1
+fi
+
+# Validate at least one service is enabled
+if [ "$embed_active" = 0 ] && [ "$rerank_active" = 0 ]; then
+  exiterr "At least one service must be enabled. Set EMBED_ENABLED=true and/or RERANK_ENABLED=true."
+fi
+
+# Determine reranker port
+if [ -z "$RERANK_PORT" ]; then
+  if [ "$embed_active" = 0 ]; then
+    RERANK_PORT=8000
+  else
+    RERANK_PORT=8001
+  fi
+fi
+
+# Validate ports
+if [ "$embed_active" = 1 ]; then
+  if ! check_port "$EMBED_PORT"; then
+    exiterr "EMBED_PORT must be an integer between 1 and 65535."
+  fi
+fi
+if [ "$rerank_active" = 1 ]; then
+  if ! check_port "$RERANK_PORT"; then
+    exiterr "RERANK_PORT must be an integer between 1 and 65535."
+  fi
+fi
+
+# Check port conflict
+if [ "$embed_active" = 1 ] && [ "$rerank_active" = 1 ] && [ "$EMBED_PORT" = "$RERANK_PORT" ]; then
+  exiterr "EMBED_PORT and RERANK_PORT cannot be the same (both set to $EMBED_PORT). Use different ports."
+fi
+
+# Resolve reranker API key (falls back to EMBED_API_KEY)
+if [ -z "$RERANK_API_KEY" ]; then
+  RERANK_API_KEY="$EMBED_API_KEY"
 fi
 
 mkdir -p /var/lib/embeddings
 
-# In local-only mode, verify the model is already cached before starting
+# In local-only mode, verify models are already cached before starting
 if [ -n "$EMBED_LOCAL_ONLY" ]; then
-  model_slug="models--$(printf '%s' "$EMBED_MODEL" | sed 's|/|--|g')"
-  if [ ! -d "/var/lib/embeddings/${model_slug}" ]; then
-    exiterr "EMBED_LOCAL_ONLY is set but model '${EMBED_MODEL}' is not found in /var/lib/embeddings. \
+  if [ "$embed_active" = 1 ]; then
+    model_slug="models--$(printf '%s' "$EMBED_MODEL" | sed 's|/|--|g')"
+    if [ ! -d "/var/lib/embeddings/${model_slug}" ]; then
+      exiterr "EMBED_LOCAL_ONLY is set but model '${EMBED_MODEL}' is not found in /var/lib/embeddings. \
 Pre-download it first: docker exec <container> embed_manage --pullmodel ${EMBED_MODEL}"
+    fi
+  fi
+  if [ "$rerank_active" = 1 ]; then
+    rerank_slug="models--$(printf '%s' "$RERANK_MODEL" | sed 's|/|--|g')"
+    if [ ! -d "/var/lib/embeddings/${rerank_slug}" ]; then
+      exiterr "EMBED_LOCAL_ONLY is set but reranker model '${RERANK_MODEL}' is not found in /var/lib/embeddings. \
+Pre-download it first: docker exec <container> embed_manage --pullmodel ${RERANK_MODEL}"
+    fi
   fi
 fi
 
@@ -88,6 +152,11 @@ export EMBED_PORT
 export EMBED_API_KEY
 export EMBED_HF_TOKEN
 export EMBED_LOCAL_ONLY
+export EMBED_ENABLED
+export RERANK_ENABLED
+export RERANK_MODEL
+export RERANK_PORT
+export RERANK_API_KEY
 # Point TEI / HuggingFace Hub at the persistent Docker volume
 export HF_HUB_CACHE=/var/lib/embeddings
 export HUGGINGFACE_HUB_CACHE=/var/lib/embeddings
@@ -101,6 +170,10 @@ fi
 printf '%s' "$EMBED_PORT"  > /var/lib/embeddings/.port
 printf '%s' "$EMBED_MODEL" > /var/lib/embeddings/.model
 printf '%s' "$server_addr" > /var/lib/embeddings/.server_addr
+printf '%s' "$embed_active" > /var/lib/embeddings/.embed_active
+printf '%s' "$rerank_active" > /var/lib/embeddings/.rerank_active
+printf '%s' "$RERANK_PORT"  > /var/lib/embeddings/.rerank_port
+printf '%s' "$RERANK_MODEL" > /var/lib/embeddings/.rerank_model
 
 echo
 echo "Embeddings Docker - https://github.com/hwdsl2/docker-embeddings"
@@ -113,20 +186,34 @@ if ! grep -q " /var/lib/embeddings " /proc/mounts 2>/dev/null; then
 fi
 
 echo
-echo "Starting text embeddings server..."
-echo "  Model: $EMBED_MODEL"
-echo "  Port:  $EMBED_PORT"
+echo "Starting services..."
+if [ "$embed_active" = 1 ]; then
+  echo "  Embeddings: model=$EMBED_MODEL  port=$EMBED_PORT"
+fi
+if [ "$rerank_active" = 1 ]; then
+  echo "  Reranker:   model=$RERANK_MODEL  port=$RERANK_PORT"
+fi
 if [ -n "$EMBED_LOCAL_ONLY" ]; then
-  echo "  Mode:  local-only (no HuggingFace downloads)"
+  echo "  Mode: local-only (no HuggingFace downloads)"
 fi
 
-# Check if model is already cached (HF Hub cache dir format: models--ORG--MODELNAME)
+# Check if models are already cached
 if [ -z "$EMBED_LOCAL_ONLY" ]; then
-  model_slug="models--$(printf '%s' "$EMBED_MODEL" | sed 's|/|--|g')"
-  if [ ! -d "/var/lib/embeddings/${model_slug}" ]; then
-    echo
-    echo "Note: Model '$EMBED_MODEL' not found in cache. It will be downloaded"
-    echo "      from HuggingFace on first start. This may take several minutes."
+  if [ "$embed_active" = 1 ]; then
+    model_slug="models--$(printf '%s' "$EMBED_MODEL" | sed 's|/|--|g')"
+    if [ ! -d "/var/lib/embeddings/${model_slug}" ]; then
+      echo
+      echo "Note: Model '$EMBED_MODEL' not found in cache. It will be downloaded"
+      echo "      from HuggingFace on first start. This may take several minutes."
+    fi
+  fi
+  if [ "$rerank_active" = 1 ]; then
+    rerank_slug="models--$(printf '%s' "$RERANK_MODEL" | sed 's|/|--|g')"
+    if [ ! -d "/var/lib/embeddings/${rerank_slug}" ]; then
+      echo
+      echo "Note: Reranker model '$RERANK_MODEL' not found in cache. It will be"
+      echo "      downloaded from HuggingFace on first start. This may take several minutes."
+    fi
   fi
 fi
 echo
@@ -135,38 +222,57 @@ echo
 # received during the model-download startup phase is handled cleanly.
 cleanup() {
   echo
-  echo "Stopping embeddings server..."
-  kill "${EMBED_PID:-}" 2>/dev/null
-  wait "${EMBED_PID:-}" 2>/dev/null
+  echo "Stopping services..."
+  [ -n "$EMBED_PID" ] && kill "$EMBED_PID" 2>/dev/null
+  [ -n "$RERANK_PID" ] && kill "$RERANK_PID" 2>/dev/null
+  [ -n "$EMBED_PID" ] && wait "$EMBED_PID" 2>/dev/null
+  [ -n "$RERANK_PID" ] && wait "$RERANK_PID" 2>/dev/null
   exit 0
 }
 trap cleanup INT TERM
 
-# Build the text-embeddings-router command as an array to handle
-# special characters in API keys correctly.
-tei_cmd=(text-embeddings-router
-  --model-id "$EMBED_MODEL"
-  --port "$EMBED_PORT"
-  --huggingface-hub-cache /var/lib/embeddings
-)
+EMBED_PID=""
+RERANK_PID=""
 
-[ -n "$EMBED_API_KEY" ]  && tei_cmd+=(--api-key "$EMBED_API_KEY")
-[ -n "$EMBED_HF_TOKEN" ] && tei_cmd+=(--hf-api-token "$EMBED_HF_TOKEN")
+# Start embeddings server
+if [ "$embed_active" = 1 ]; then
+  embed_cmd=(text-embeddings-router
+    --model-id "$EMBED_MODEL"
+    --port "$EMBED_PORT"
+    --huggingface-hub-cache /var/lib/embeddings
+  )
+  [ -n "$EMBED_API_KEY" ]  && embed_cmd+=(--api-key "$EMBED_API_KEY")
+  [ -n "$EMBED_HF_TOKEN" ] && embed_cmd+=(--hf-token "$EMBED_HF_TOKEN")
 
-# Start the TEI server in the background
-"${tei_cmd[@]}" &
-EMBED_PID=$!
+  "${embed_cmd[@]}" &
+  EMBED_PID=$!
+fi
 
-# Wait for the server to become ready.
-# Allow up to 300 seconds — first-run model download can take several minutes
-# on a slow connection even for the small default model (~130 MB).
+# Start reranker server
+if [ "$rerank_active" = 1 ]; then
+  rerank_cmd=(text-embeddings-router
+    --model-id "$RERANK_MODEL"
+    --port "$RERANK_PORT"
+    --huggingface-hub-cache /var/lib/embeddings
+  )
+  [ -n "$RERANK_API_KEY" ]  && rerank_cmd+=(--api-key "$RERANK_API_KEY")
+  [ -n "$EMBED_HF_TOKEN" ] && rerank_cmd+=(--hf-token "$EMBED_HF_TOKEN")
+
+  "${rerank_cmd[@]}" &
+  RERANK_PID=$!
+fi
+
+# Wait for server(s) to become ready.
+# Allow up to 300 seconds — first-run model download can take several minutes.
 wait_for_server() {
+  local pid="$1"
+  local port="$2"
   local i=0
   while [ "$i" -lt 300 ]; do
-    if ! kill -0 "$EMBED_PID" 2>/dev/null; then
+    if ! kill -0 "$pid" 2>/dev/null; then
       return 1
     fi
-    if curl -sf "http://127.0.0.1:${EMBED_PORT}/health" >/dev/null 2>&1; then
+    if curl -sf "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
@@ -175,35 +281,90 @@ wait_for_server() {
   return 1
 }
 
-if ! wait_for_server; then
-  if ! kill -0 "$EMBED_PID" 2>/dev/null; then
-    echo "Error: Embeddings server failed to start. Check the container logs for details." >&2
-  else
-    echo "Error: Embeddings server did not become ready within 300 seconds." >&2
-    kill "$EMBED_PID" 2>/dev/null
+if [ "$embed_active" = 1 ]; then
+  if ! wait_for_server "$EMBED_PID" "$EMBED_PORT"; then
+    if ! kill -0 "$EMBED_PID" 2>/dev/null; then
+      echo "Error: Embeddings server failed to start. Check the container logs for details." >&2
+    else
+      echo "Error: Embeddings server did not become ready within 300 seconds." >&2
+      kill "$EMBED_PID" 2>/dev/null
+    fi
+    [ -n "$RERANK_PID" ] && kill "$RERANK_PID" 2>/dev/null
+    exit 1
   fi
-  exit 1
+fi
+
+if [ "$rerank_active" = 1 ]; then
+  if ! wait_for_server "$RERANK_PID" "$RERANK_PORT"; then
+    if ! kill -0 "$RERANK_PID" 2>/dev/null; then
+      echo "Error: Reranker server failed to start. Check the container logs for details." >&2
+    else
+      echo "Error: Reranker server did not become ready within 300 seconds." >&2
+      kill "$RERANK_PID" 2>/dev/null
+    fi
+    [ -n "$EMBED_PID" ] && kill "$EMBED_PID" 2>/dev/null
+    exit 1
+  fi
 fi
 
 echo
 echo "==========================================================="
-echo " Text embeddings server is ready"
+if [ "$embed_active" = 1 ] && [ "$rerank_active" = 1 ]; then
+  echo " Text embeddings & reranking server is ready"
+elif [ "$rerank_active" = 1 ]; then
+  echo " Reranking server is ready"
+else
+  echo " Text embeddings server is ready"
+fi
 echo "==========================================================="
-echo " Model:    $EMBED_MODEL"
-echo " Endpoint: http://${server_addr}:${EMBED_PORT}"
+if [ "$embed_active" = 1 ]; then
+  echo " Embeddings:"
+  echo "   Model:    $EMBED_MODEL"
+  echo "   Endpoint: http://${server_addr}:${EMBED_PORT}"
+fi
+if [ "$rerank_active" = 1 ]; then
+  if [ "$embed_active" = 1 ]; then
+    echo " Reranker:"
+  fi
+  echo "   Model:    $RERANK_MODEL"
+  echo "   Endpoint: http://${server_addr}:${RERANK_PORT}"
+fi
 echo "==========================================================="
 echo
-echo "Generate embeddings:"
-echo "  curl http://${server_addr}:${EMBED_PORT}/v1/embeddings \\"
-echo "    -H 'Content-Type: application/json' \\"
-echo "    -d '{\"input\": \"Your text here\", \"model\": \"text-embedding-ada-002\"}'"
-echo
-if [ -n "$EMBED_API_KEY" ]; then
-  echo "API key authentication is enabled."
+
+if [ "$embed_active" = 1 ]; then
+  echo "Generate embeddings:"
+  echo "  curl http://${server_addr}:${EMBED_PORT}/v1/embeddings \\"
+  echo "    -H 'Content-Type: application/json' \\"
+  echo "    -d '{\"input\": \"Your text here\", \"model\": \"text-embedding-ada-002\"}'"
+  echo
+fi
+
+if [ "$rerank_active" = 1 ]; then
+  echo "Rerank documents:"
+  echo "  curl http://${server_addr}:${RERANK_PORT}/rerank \\"
+  echo "    -H 'Content-Type: application/json' \\"
+  echo "    -d '{\"query\": \"What is AI?\", \"texts\": [\"AI is...\", \"The weather is...\"], \"raw_scores\": false}'"
+  echo
+fi
+
+if [ -n "$EMBED_API_KEY" ] && [ "$embed_active" = 1 ]; then
+  echo "Embeddings API key authentication is enabled."
   echo "Include header:  -H \"Authorization: Bearer \$EMBED_API_KEY\""
   echo
 fi
-echo "Interactive API docs: http://${server_addr}:${EMBED_PORT}/docs"
+if [ -n "$RERANK_API_KEY" ] && [ "$rerank_active" = 1 ]; then
+  echo "Reranker API key authentication is enabled."
+  echo "Include header:  -H \"Authorization: Bearer \$RERANK_API_KEY\""
+  echo
+fi
+
+if [ "$embed_active" = 1 ]; then
+  echo "Embeddings API docs: http://${server_addr}:${EMBED_PORT}/docs"
+fi
+if [ "$rerank_active" = 1 ]; then
+  echo "Reranker API docs:   http://${server_addr}:${RERANK_PORT}/docs"
+fi
 echo
 echo "To set up HTTPS, see: Using a reverse proxy"
 echo "  https://github.com/hwdsl2/docker-embeddings#using-a-reverse-proxy"
@@ -211,5 +372,14 @@ echo
 echo "Setup complete."
 echo
 
-# Wait for the server process to exit
-wait "$EMBED_PID"
+# Wait for either server process to exit
+if [ "$embed_active" = 1 ] && [ "$rerank_active" = 1 ]; then
+  # Wait for either process; if one dies, stop the other
+  wait -n "$EMBED_PID" "$RERANK_PID" 2>/dev/null
+  echo "Error: A server process exited unexpectedly." >&2
+  cleanup
+elif [ "$embed_active" = 1 ]; then
+  wait "$EMBED_PID"
+else
+  wait "$RERANK_PID"
+fi

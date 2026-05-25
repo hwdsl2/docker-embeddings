@@ -5,6 +5,7 @@ services:
     restart: always
     ports:
       - "8000:8000/tcp"  # For a host-based reverse proxy, change to "127.0.0.1:8000:8000/tcp"
+      # - "8001:8001/tcp"  # Reranker API (uncomment if RERANK_ENABLED=true in embed.env)
     volumes:
       - embeddings-data:/var/lib/embeddings
       - ./embed.env:/embed.env:ro

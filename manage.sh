@@ -13,6 +13,10 @@ EMBED_DATA="/var/lib/embeddings"
 PORT_FILE="${EMBED_DATA}/.port"
 MODEL_FILE="${EMBED_DATA}/.model"
 SERVER_ADDR_FILE="${EMBED_DATA}/.server_addr"
+EMBED_ACTIVE_FILE="${EMBED_DATA}/.embed_active"
+RERANK_ACTIVE_FILE="${EMBED_DATA}/.rerank_active"
+RERANK_PORT_FILE="${EMBED_DATA}/.rerank_port"
+RERANK_MODEL_FILE="${EMBED_DATA}/.rerank_model"
 
 exiterr() { echo "Error: $1" >&2; exit 1; }
 
@@ -31,12 +35,14 @@ Usage: docker exec <container> embed_manage [options]
 Options:
   --showinfo                           show server info (model, endpoint, API docs)
   --listmodels                         list recommended embedding models with sizes
+  --listrerankers                      list recommended reranker models with sizes
   --pullmodel <model>                  pre-download a model to the cache volume
 
   -h, --help                           show this help message and exit
 
 The model is a HuggingFace model ID (e.g. BAAI/bge-small-en-v1.5).
-Run '--listmodels' to see recommended models.
+Run '--listmodels' to see recommended embedding models.
+Run '--listrerankers' to see recommended reranker (cross-encoder) models.
 
 To switch the active model, set EMBED_MODEL=<id> and restart the container.
 Use '--pullmodel' to pre-download a model before switching, avoiding a
@@ -45,8 +51,9 @@ delay on the next container start.
 Examples:
   docker exec embeddings embed_manage --showinfo
   docker exec embeddings embed_manage --listmodels
+  docker exec embeddings embed_manage --listrerankers
   docker exec embeddings embed_manage --pullmodel BAAI/bge-base-en-v1.5
-  docker exec embeddings embed_manage --pullmodel nomic-ai/nomic-embed-text-v1.5
+  docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 
 EOF
   exit "$exit_code"
@@ -82,17 +89,50 @@ load_config() {
   else
     SERVER_ADDR="<server ip>"
   fi
+
+  # Load reranker config
+  if [ -f "$EMBED_ACTIVE_FILE" ]; then
+    EMBED_ACTIVE=$(cat "$EMBED_ACTIVE_FILE")
+  else
+    EMBED_ACTIVE=1
+  fi
+
+  if [ -f "$RERANK_ACTIVE_FILE" ]; then
+    RERANK_ACTIVE=$(cat "$RERANK_ACTIVE_FILE")
+  else
+    RERANK_ACTIVE=0
+  fi
+
+  if [ -f "$RERANK_PORT_FILE" ]; then
+    RERANK_PORT=$(cat "$RERANK_PORT_FILE")
+  else
+    RERANK_PORT=8001
+  fi
+
+  if [ -f "$RERANK_MODEL_FILE" ]; then
+    RERANK_MODEL=$(cat "$RERANK_MODEL_FILE")
+  else
+    RERANK_MODEL=BAAI/bge-reranker-v2-m3
+  fi
 }
 
 check_server() {
-  if ! curl -sf "http://127.0.0.1:${EMBED_PORT}/health" >/dev/null 2>&1; then
-    exiterr "Embeddings server is not responding on port ${EMBED_PORT}. Is the container fully started?"
+  if [ "$EMBED_ACTIVE" = 1 ]; then
+    if ! curl -sf "http://127.0.0.1:${EMBED_PORT}/health" >/dev/null 2>&1; then
+      exiterr "Embeddings server is not responding on port ${EMBED_PORT}. Is the container fully started?"
+    fi
+  fi
+  if [ "$RERANK_ACTIVE" = 1 ]; then
+    if ! curl -sf "http://127.0.0.1:${RERANK_PORT}/health" >/dev/null 2>&1; then
+      exiterr "Reranker server is not responding on port ${RERANK_PORT}. Is the container fully started?"
+    fi
   fi
 }
 
 parse_args() {
   show_info=0
   list_models=0
+  list_rerankers=0
   pull_model=0
   model_to_pull=""
 
@@ -104,6 +144,10 @@ parse_args() {
         ;;
       --listmodels)
         list_models=1
+        shift
+        ;;
+      --listrerankers)
+        list_rerankers=1
         shift
         ;;
       --pullmodel)
@@ -124,7 +168,7 @@ parse_args() {
 
 check_args() {
   local action_count
-  action_count=$((show_info + list_models + pull_model))
+  action_count=$((show_info + list_models + list_rerankers + pull_model))
 
   if [ "$action_count" -eq 0 ]; then
     show_usage
@@ -141,25 +185,55 @@ check_args() {
 do_show_info() {
   echo
   echo "==========================================================="
-  echo " Text Embeddings Server"
+  if [ "$EMBED_ACTIVE" = 1 ] && [ "$RERANK_ACTIVE" = 1 ]; then
+    echo " Text Embeddings & Reranking Server"
+  elif [ "$RERANK_ACTIVE" = 1 ]; then
+    echo " Reranking Server"
+  else
+    echo " Text Embeddings Server"
+  fi
   echo "==========================================================="
-  echo " Active model: $EMBED_MODEL"
-  echo " Endpoint:     http://${SERVER_ADDR}:${EMBED_PORT}"
+  if [ "$EMBED_ACTIVE" = 1 ]; then
+    echo " Embeddings:"
+    echo "   Model:    $EMBED_MODEL"
+    echo "   Endpoint: http://${SERVER_ADDR}:${EMBED_PORT}"
+  fi
+  if [ "$RERANK_ACTIVE" = 1 ]; then
+    echo " Reranker:"
+    echo "   Model:    $RERANK_MODEL"
+    echo "   Endpoint: http://${SERVER_ADDR}:${RERANK_PORT}"
+  fi
   echo "==========================================================="
   echo
   echo "API endpoints:"
-  echo "  POST http://${SERVER_ADDR}:${EMBED_PORT}/v1/embeddings"
-  echo "  GET  http://${SERVER_ADDR}:${EMBED_PORT}/info"
-  echo "  GET  http://${SERVER_ADDR}:${EMBED_PORT}/docs     (interactive docs)"
+  if [ "$EMBED_ACTIVE" = 1 ]; then
+    echo "  POST http://${SERVER_ADDR}:${EMBED_PORT}/v1/embeddings"
+    echo "  GET  http://${SERVER_ADDR}:${EMBED_PORT}/info"
+    echo "  GET  http://${SERVER_ADDR}:${EMBED_PORT}/docs     (interactive docs)"
+  fi
+  if [ "$RERANK_ACTIVE" = 1 ]; then
+    echo "  POST http://${SERVER_ADDR}:${RERANK_PORT}/rerank"
+    echo "  GET  http://${SERVER_ADDR}:${RERANK_PORT}/info"
+    echo "  GET  http://${SERVER_ADDR}:${RERANK_PORT}/docs     (interactive docs)"
+  fi
   echo
-  echo "Example — generate embeddings:"
-  echo "  curl http://${SERVER_ADDR}:${EMBED_PORT}/v1/embeddings \\"
-  echo "    -H 'Content-Type: application/json' \\"
-  echo "    -d '{\"input\": \"Your text here\", \"model\": \"text-embedding-ada-002\"}'"
-  echo
+  if [ "$EMBED_ACTIVE" = 1 ]; then
+    echo "Example — generate embeddings:"
+    echo "  curl http://${SERVER_ADDR}:${EMBED_PORT}/v1/embeddings \\"
+    echo "    -H 'Content-Type: application/json' \\"
+    echo "    -d '{\"input\": \"Your text here\", \"model\": \"text-embedding-ada-002\"}'"
+    echo
+  fi
+  if [ "$RERANK_ACTIVE" = 1 ]; then
+    echo "Example — rerank documents:"
+    echo "  curl http://${SERVER_ADDR}:${RERANK_PORT}/rerank \\"
+    echo "    -H 'Content-Type: application/json' \\"
+    echo "    -d '{\"query\": \"What is AI?\", \"texts\": [\"AI is...\", \"The weather is...\"], \"raw_scores\": false}'"
+    echo
+  fi
   echo "To change the active model:"
   echo "  1. Pre-download: docker exec <container> embed_manage --pullmodel <model>"
-  echo "  2. Set EMBED_MODEL=<model> in your env file and restart the container."
+  echo "  2. Set EMBED_MODEL=<model> (or RERANK_MODEL=<model>) in your env file and restart."
   echo
 }
 
@@ -189,6 +263,32 @@ Notes:
     See: https://huggingface.co/models?pipeline_tag=feature-extraction
 
 Use '--pullmodel <model>' to pre-download a model before switching.
+
+EOF
+}
+
+do_list_rerankers() {
+  cat <<'EOF'
+
+Recommended reranker (cross-encoder) models for TEI:
+
+  Model ID                               Disk      Notes
+  --------                               ----      -----
+  BAAI/bge-reranker-v2-m3               ~560 MB   Multilingual; strong accuracy — default
+  BAAI/bge-reranker-base                ~440 MB   English; good balance
+  BAAI/bge-reranker-large               ~1.3 GB   English; highest accuracy
+  cross-encoder/ms-marco-MiniLM-L6-v2    ~90 MB   Very small; fast; English
+
+Notes:
+  - Reranker models are cross-encoders that score (query, document) pairs.
+  - They are used to re-rank retrieved documents by relevance after initial
+    retrieval via embeddings or keyword search.
+  - Enable reranking by setting RERANK_ENABLED=true in your env file.
+  - The reranker runs as a separate process on RERANK_PORT (default: 8001).
+  - Any HuggingFace cross-encoder model compatible with TEI can be used.
+    See: https://huggingface.co/models?pipeline_tag=text-classification&sort=downloads
+
+Use '--pullmodel <model>' to pre-download a reranker model before enabling.
 
 EOF
 }
@@ -237,8 +337,8 @@ except Exception as exc:
 PYEOF
 
   echo
-  echo "To activate this model, set EMBED_MODEL=${model_to_pull} in your"
-  echo "env file (embed.env) and restart the container."
+  echo "To activate this model, set EMBED_MODEL=${model_to_pull} (or RERANK_MODEL=${model_to_pull})"
+  echo "in your env file (embed.env) and restart the container."
   echo
 }
 
@@ -255,6 +355,11 @@ fi
 
 if [ "$list_models" = 1 ]; then
   do_list_models
+  exit 0
+fi
+
+if [ "$list_rerankers" = 1 ]; then
+  do_list_rerankers
   exit 0
 fi
 
