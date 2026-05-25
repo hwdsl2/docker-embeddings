@@ -8,7 +8,7 @@ jobs:
     if: github.repository_owner == 'hwdsl2'
     strategy:
       matrix:
-        test_id: [no-env, with-env, with-key]
+        test_id: [no-env, with-env, with-key, with-rerank]
       fail-fast: false
     env:
       TEST_ID: ${{ matrix.test_id }}
@@ -54,13 +54,31 @@ jobs:
               -e EMBED_API_KEY=test-embed-key \
               -p 8000:8000/tcp \
               -d embed-test
+          elif [ "$TEST_ID" = "with-rerank" ]; then
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -v embed-test-data:/var/lib/embeddings \
+              -e EMBED_MODEL=BAAI/bge-small-en-v1.5 \
+              -e RERANK_ENABLED=true \
+              -e RERANK_MODEL=cross-encoder/ms-marco-MiniLM-L6-v2 \
+              -p 8000:8000/tcp \
+              -p 8001:8001/tcp \
+              -d embed-test
           fi
 
           # Wait for server to be ready (up to 300 seconds for model download)
           i=0
           while [ "$i" -lt 300 ]; do
             if docker exec "$TEST_ID" curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
-              break
+              # If rerank is enabled, also wait for the reranker
+              if [ "$TEST_ID" = "with-rerank" ]; then
+                if docker exec "$TEST_ID" curl -sf http://127.0.0.1:8001/health >/dev/null 2>&1; then
+                  break
+                fi
+              else
+                break
+              fi
             fi
             sleep 1
             i=$((i + 1))
@@ -94,6 +112,7 @@ jobs:
           # Test embed_manage commands
           docker exec "$TEST_ID" embed_manage --showinfo
           docker exec "$TEST_ID" embed_manage --listmodels
+          docker exec "$TEST_ID" embed_manage --listrerankers
 
           # Test embed_manage --pullmodel (pull an already-cached model; verifies command works)
           docker exec "$TEST_ID" embed_manage --pullmodel BAAI/bge-small-en-v1.5
@@ -112,6 +131,21 @@ jobs:
             -d '{"input": ["First sentence", "Second sentence"], "model": "text-embedding-ada-002"}' \
             | grep -q '"embedding"'
 
+          # Test reranking endpoint (only for with-rerank test)
+          if [ "$TEST_ID" = "with-rerank" ]; then
+            # Verify reranker health
+            docker exec "$TEST_ID" curl -sf http://127.0.0.1:8001/health
+
+            # Test rerank endpoint
+            rerank_response=$(curl -sf http://127.0.0.1:8001/rerank \
+              -H "Content-Type: application/json" \
+              -d '{"query": "What is AI?", "texts": ["Artificial intelligence is...", "The weather is sunny."], "raw_scores": false}')
+            echo "$rerank_response" | grep -q '"score"'
+
+            # Verify reranker info endpoint
+            curl -sf http://127.0.0.1:8001/info | grep -q '"model_id"'
+          fi
+
           docker restart "$TEST_ID"
 
           sleep 15
@@ -120,7 +154,13 @@ jobs:
           i=0
           while [ "$i" -lt 120 ]; do
             if docker exec "$TEST_ID" curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
-              break
+              if [ "$TEST_ID" = "with-rerank" ]; then
+                if docker exec "$TEST_ID" curl -sf http://127.0.0.1:8001/health >/dev/null 2>&1; then
+                  break
+                fi
+              else
+                break
+              fi
             fi
             sleep 1
             i=$((i + 1))
