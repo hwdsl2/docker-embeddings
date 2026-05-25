@@ -8,6 +8,7 @@ on:
       - '.github/workflows/buildx.yml'
       - '.dockerignore'
       - 'Dockerfile'
+      - 'Dockerfile.arm64'
       - 'manage.sh'
       - 'run.sh'
 
