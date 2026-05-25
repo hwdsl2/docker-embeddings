@@ -19,7 +19,7 @@ Docker-образ для запуска самостоятельно разме�
 - Офлайн-режим — работа без доступа к интернету с предварительно кэшированными моделями (`EMBED_LOCAL_ONLY`)
 - Автоматически собирается и публикуется через [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml)
 - Постоянный кэш моделей через Docker-том
-- Поддерживаемая платформа: `linux/amd64`
+- Поддерживаемые платформы: `linux/amd64`, `linux/arm64`
 
 **Также доступно:**
 
@@ -71,7 +71,7 @@ curl http://IP_вашего_сервера:8000/v1/embeddings \
 ## Требования
 
 - Linux-сервер (локальный или облачный) с установленным Docker
-- Поддерживаемая архитектура: `amd64` (x86_64)
+- Поддерживаемые архитектуры: `amd64` (x86_64), `arm64` (aarch64, например AWS Graviton, Apple Silicon VM)
 - Минимальный объём оперативной памяти: ~250 МБ для модели по умолчанию `BAAI/bge-small-en-v1.5` (см. [таблицу моделей](#смена-модели))
 - Доступ к интернету для первоначальной загрузки модели (после загрузки модель кэшируется локально). Не требуется при использовании `EMBED_LOCAL_ONLY=true` с предварительно кэшированными моделями.
 
@@ -92,7 +92,7 @@ docker pull quay.io/hwdsl2/embeddings-server
 docker image tag quay.io/hwdsl2/embeddings-server hwdsl2/embeddings-server
 ```
 
-Поддерживаемая платформа: `linux/amd64`.
+Поддерживаемые платформы: `linux/amd64`, `linux/arm64`.
 
 ## Переменные окружения
 
@@ -525,7 +525,8 @@ docker rm -f embeddings
 
 ## Технические подробности
 
-- Базовый образ: `ghcr.io/huggingface/text-embeddings-inference:cpu-latest` (Debian)
+- Базовый образ (amd64): `ghcr.io/huggingface/text-embeddings-inference:cpu-latest` (Debian)
+- Базовый образ (arm64): собирается из исходников TEI с бэкендами ONNX Runtime + Candle (Debian)
 - Движок эмбеддингов: [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) (на Rust, высокая производительность)
 - API: совместимый с OpenAI эндпоинт `/v1/embeddings` (предоставляется напрямую TEI)
 - Переранжирование: TEI эндпоинт `/rerank` через второй процесс с загруженной cross-encoder моделью

@@ -19,7 +19,7 @@ Docker image to run a self-hosted text embeddings and reranking server, powered 
 - Offline/air-gapped mode — run without internet access using pre-cached models (`EMBED_LOCAL_ONLY`)
 - Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml)
 - Persistent model cache via a Docker volume
-- Supported platform: `linux/amd64`
+- Supported platforms: `linux/amd64`, `linux/arm64`
 
 **Also available:**
 
@@ -71,7 +71,7 @@ curl http://your_server_ip:8000/v1/embeddings \
 ## Requirements
 
 - A Linux server (local or cloud) with Docker installed
-- Supported architecture: `amd64` (x86_64)
+- Supported architectures: `amd64` (x86_64), `arm64` (aarch64, e.g. AWS Graviton, Apple Silicon VMs)
 - Minimum RAM: ~250 MB free for the default `BAAI/bge-small-en-v1.5` model (see [model table](#switching-the-model))
 - Internet access for the initial model download (the model is cached locally afterwards). Not required if using `EMBED_LOCAL_ONLY=true` with pre-cached models.
 
@@ -92,7 +92,7 @@ docker pull quay.io/hwdsl2/embeddings-server
 docker image tag quay.io/hwdsl2/embeddings-server hwdsl2/embeddings-server
 ```
 
-Supported platform: `linux/amd64`.
+Supported platforms: `linux/amd64`, `linux/arm64`.
 
 ## Environment variables
 
@@ -525,7 +525,8 @@ The Whisper (STT), Embeddings, LiteLLM, Kokoro (TTS), Ollama (LLM), Docling, and
 
 ## Technical details
 
-- Base image: `ghcr.io/huggingface/text-embeddings-inference:cpu-latest` (Debian)
+- Base image (amd64): `ghcr.io/huggingface/text-embeddings-inference:cpu-latest` (Debian)
+- Base image (arm64): Built from TEI source with ONNX Runtime + Candle backends (Debian)
 - Embeddings engine: [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) (Rust-based, high-performance)
 - API: OpenAI-compatible `/v1/embeddings` endpoint (served directly by TEI)
 - Reranking: TEI `/rerank` endpoint via a second process loaded with a cross-encoder model

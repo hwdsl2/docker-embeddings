@@ -19,7 +19,7 @@
 - 離線/隔離網路模式 — 使用預先快取的模型無需網際網路連線 (`EMBED_LOCAL_ONLY`)
 - 透過 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) 自動建置並發布
 - 透過 Docker 資料卷持久化模型快取
-- 支援平台：`linux/amd64`
+- 支援平台：`linux/amd64`、`linux/arm64`
 
 **另提供：**
 
@@ -71,7 +71,7 @@ curl http://您的伺服器IP:8000/v1/embeddings \
 ## 系統需求
 
 - 已安裝 Docker 的 Linux 伺服器（本地或雲端）
-- 支援的架構：`amd64`（x86_64）
+- 支援的架構：`amd64`（x86_64）、`arm64`（aarch64，如 AWS Graviton、Apple Silicon 虛擬機）
 - 最低記憶體：預設 `BAAI/bge-small-en-v1.5` 模型約需 250 MB 可用記憶體（請參閱[模型清單](#切換模型)）
 - 首次啟動需要網際網路連線以下載模型（之後模型將快取在本地）。使用預先快取的模型並設定 `EMBED_LOCAL_ONLY=true` 時不需要網路連線。
 
@@ -92,7 +92,7 @@ docker pull quay.io/hwdsl2/embeddings-server
 docker image tag quay.io/hwdsl2/embeddings-server hwdsl2/embeddings-server
 ```
 
-支援平台：`linux/amd64`。
+支援平台：`linux/amd64`、`linux/arm64`。
 
 ## 環境變數
 
@@ -525,7 +525,8 @@ Whisper (STT)、Embeddings、LiteLLM、Kokoro (TTS)、Ollama (LLM)、Docling 和
 
 ## 技術細節
 
-- 基礎映像：`ghcr.io/huggingface/text-embeddings-inference:cpu-latest`（Debian）
+- 基礎映像（amd64）：`ghcr.io/huggingface/text-embeddings-inference:cpu-latest`（Debian）
+- 基礎映像（arm64）：從 TEI 原始碼編譯，使用 ONNX Runtime + Candle 後端（Debian）
 - 向量化引擎：[Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference)（基於 Rust，高效能）
 - API：OpenAI 相容的 `/v1/embeddings` 端點（由 TEI 直接提供）
 - 重排序：TEI `/rerank` 端點，透過載入交叉編碼器模型的第二個程序提供
