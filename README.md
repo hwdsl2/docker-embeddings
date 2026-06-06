@@ -444,6 +444,27 @@ model_list:
 
 Then call the LiteLLM `/rerank` endpoint, and it will proxy to your self-hosted reranker.
 
+## Securing your server
+
+If your embeddings server is reachable from the public internet — even briefly — apply at minimum these protections. Embedding requests carry your text data, so an unauthenticated endpoint risks both data leakage and compute abuse.
+
+**1. Set an API key.** Generate a strong random key and set `EMBED_API_KEY` in your `env` file. All API requests must then include `Authorization: Bearer <key>`. If the reranker is enabled, set `RERANK_API_KEY` as well (it falls back to `EMBED_API_KEY` if unset).
+
+```bash
+# Generate a 32-byte random key
+openssl rand -hex 32
+```
+
+**2. Bind to localhost when fronted by a reverse proxy.** Replace `-p 8000:8000` with `-p 127.0.0.1:8000:8000` (or change `"8000:8000/tcp"` to `"127.0.0.1:8000:8000/tcp"` in `docker-compose.yml`) so the unencrypted port is not reachable directly from outside the host. If the reranker is enabled, do the same for port `8001`.
+
+**3. Limit request body size at the proxy.** Large batch embedding requests can be memory-intensive; configure your reverse proxy to reject oversized request bodies (e.g. nginx `client_max_body_size 10M;`).
+
+**4. Mind the log level.** Verbose log levels may write input text to logs. Keep the server at `INFO` level or higher on shared systems.
+
+**5. Enable CORS at the proxy if calling from a browser.** The server does not set `Access-Control-Allow-Origin` headers by default; add them at your reverse proxy if you intend to call the API directly from a web page on a different origin.
+
+**6. Consider rate limiting.** Place a rate-limit (e.g. nginx `limit_req_zone`, Caddy `rate_limit`) in front of the server to cap concurrent embedding requests per client IP.
+
 ## Using a reverse proxy
 
 For internet-facing deployments, place a reverse proxy in front of the embeddings server to handle HTTPS termination. The server works without HTTPS on a local or trusted network, but HTTPS is recommended when the API endpoint is exposed to the internet.
