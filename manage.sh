@@ -17,6 +17,9 @@ EMBED_ACTIVE_FILE="${EMBED_DATA}/.embed_active"
 RERANK_ACTIVE_FILE="${EMBED_DATA}/.rerank_active"
 RERANK_PORT_FILE="${EMBED_DATA}/.rerank_port"
 RERANK_MODEL_FILE="${EMBED_DATA}/.rerank_model"
+EMBED_AUTH_ENABLED_FILE="${EMBED_DATA}/.embed_auth_enabled"
+RERANK_AUTH_ENABLED_FILE="${EMBED_DATA}/.rerank_auth_enabled"
+API_KEY_FILE="${EMBED_DATA}/.api_key"
 
 exiterr() { echo "Error: $1" >&2; exit 1; }
 
@@ -34,6 +37,8 @@ Usage: docker exec <container> embed_manage [options]
 
 Options:
   --showinfo                           show server info (model, endpoint, API docs)
+  --showkey                            show the API key, if configured
+  --getkey                             output the API key (machine-readable, no decoration)
   --listmodels                         list recommended embedding models with sizes
   --listrerankers                      list recommended reranker models with sizes
   --pullmodel <model>                  pre-download a model to the cache volume
@@ -50,6 +55,8 @@ delay on the next container start.
 
 Examples:
   docker exec embeddings embed_manage --showinfo
+  docker exec embeddings embed_manage --showkey
+  docker exec embeddings embed_manage --getkey
   docker exec embeddings embed_manage --listmodels
   docker exec embeddings embed_manage --listrerankers
   docker exec embeddings embed_manage --pullmodel BAAI/bge-base-en-v1.5
@@ -114,6 +121,70 @@ load_config() {
   else
     RERANK_MODEL=BAAI/bge-reranker-v2-m3
   fi
+
+  if [ -f "$EMBED_AUTH_ENABLED_FILE" ]; then
+    EMBED_AUTH_ENABLED=$(cat "$EMBED_AUTH_ENABLED_FILE")
+  fi
+
+  if [ "$EMBED_AUTH_ENABLED" != 0 ] && [ -z "$EMBED_API_KEY" ] && [ -f "$API_KEY_FILE" ]; then
+    EMBED_API_KEY=$(cat "$API_KEY_FILE")
+  fi
+
+  if [ -z "$EMBED_AUTH_ENABLED" ]; then
+    if [ -n "$EMBED_API_KEY" ]; then
+      EMBED_AUTH_ENABLED=1
+    else
+      EMBED_AUTH_ENABLED=0
+    fi
+  fi
+
+  if [ -f "$RERANK_AUTH_ENABLED_FILE" ]; then
+    RERANK_AUTH_ENABLED=$(cat "$RERANK_AUTH_ENABLED_FILE")
+  elif [ -n "$EMBED_API_KEY" ]; then
+    RERANK_AUTH_ENABLED=1
+  else
+    RERANK_AUTH_ENABLED=0
+  fi
+}
+
+do_show_key() {
+  if [ "$EMBED_AUTH_ENABLED" != 1 ] && [ "$RERANK_AUTH_ENABLED" != 1 ]; then
+    exiterr "API key authentication is disabled for this container."
+  fi
+
+  if [ -z "$EMBED_API_KEY" ]; then
+    if [ -f "$API_KEY_FILE" ]; then
+      EMBED_API_KEY=$(cat "$API_KEY_FILE")
+    else
+      exiterr "API key not found. Authentication may be disabled for this container."
+    fi
+  fi
+
+  echo
+  echo "==========================================================="
+  echo " Embeddings API key"
+  echo "==========================================================="
+  echo "${EMBED_API_KEY}"
+  echo "==========================================================="
+  echo
+  echo "Use with: -H \"Authorization: Bearer ${EMBED_API_KEY}\""
+  echo
+}
+
+do_get_key() {
+  if [ "$EMBED_AUTH_ENABLED" != 1 ] && [ "$RERANK_AUTH_ENABLED" != 1 ]; then
+    exit 1
+  fi
+
+  if [ -z "$EMBED_API_KEY" ]; then
+    if [ -f "$API_KEY_FILE" ]; then
+      EMBED_API_KEY=$(cat "$API_KEY_FILE")
+    else
+      exit 1
+    fi
+  fi
+
+  printf '%s' "$EMBED_API_KEY"
 }
 
 check_server() {
@@ -131,6 +202,8 @@ check_server() {
 
 parse_args() {
   show_info=0
+  show_key=0
+  get_key=0
   list_models=0
   list_rerankers=0
   pull_model=0
@@ -140,6 +213,14 @@ parse_args() {
     case "$1" in
       --showinfo)
         show_info=1
+        shift
+        ;;
+      --showkey)
+        show_key=1
+        shift
+        ;;
+      --getkey)
+        get_key=1
         shift
         ;;
       --listmodels)
@@ -168,7 +249,7 @@ parse_args() {
 
 check_args() {
   local action_count
-  action_count=$((show_info + list_models + list_rerankers + pull_model))
+  action_count=$((show_info + show_key + get_key + list_models + list_rerankers + pull_model))
 
   if [ "$action_count" -eq 0 ]; then
     show_usage
@@ -221,6 +302,9 @@ do_show_info() {
     echo "Example — generate embeddings:"
     echo "  curl http://${SERVER_ADDR}:${EMBED_PORT}/v1/embeddings \\"
     echo "    -H 'Content-Type: application/json' \\"
+    if [ "$EMBED_AUTH_ENABLED" = 1 ]; then
+      echo "    -H \"Authorization: Bearer <api-key>\" \\"
+    fi
     echo "    -d '{\"input\": \"Your text here\", \"model\": \"text-embedding-ada-002\"}'"
     echo
   fi
@@ -228,7 +312,14 @@ do_show_info() {
     echo "Example — rerank documents:"
     echo "  curl http://${SERVER_ADDR}:${RERANK_PORT}/rerank \\"
     echo "    -H 'Content-Type: application/json' \\"
+    if [ "$RERANK_AUTH_ENABLED" = 1 ]; then
+      echo "    -H \"Authorization: Bearer <api-key>\" \\"
+    fi
     echo "    -d '{\"query\": \"What is AI?\", \"texts\": [\"AI is...\", \"The weather is...\"], \"raw_scores\": false}'"
+    echo
+  fi
+  if [ "$EMBED_AUTH_ENABLED" = 1 ] || [ "$RERANK_AUTH_ENABLED" = 1 ]; then
+    echo "Use '--showkey' to display the API key."
     echo
   fi
   echo "To change the active model:"
@@ -350,6 +441,16 @@ check_args
 if [ "$show_info" = 1 ]; then
   check_server
   do_show_info
+  exit 0
+fi
+
+if [ "$show_key" = 1 ]; then
+  do_show_key
+  exit 0
+fi
+
+if [ "$get_key" = 1 ]; then
+  do_get_key
   exit 0
 fi
 

@@ -41,6 +41,9 @@ if [ ! -f "/.dockerenv" ] && [ ! -f "/run/.containerenv" ] \
   exiterr "This script ONLY runs in a container (e.g. Docker, Podman)."
 fi
 
+EMBED_API_KEY_WAS_SET=${EMBED_API_KEY+x}
+RERANK_API_KEY_WAS_SET=${RERANK_API_KEY+x}
+
 # Read and sanitize environment variables
 EMBED_MODEL=$(nospaces "$EMBED_MODEL")
 EMBED_MODEL=$(noquotes "$EMBED_MODEL")
@@ -112,12 +115,39 @@ if [ "$embed_active" = 1 ] && [ "$rerank_active" = 1 ] && [ "$EMBED_PORT" = "$RE
   exiterr "EMBED_PORT and RERANK_PORT cannot be the same (both set to $EMBED_PORT). Use different ports."
 fi
 
-# Resolve reranker API key (falls back to EMBED_API_KEY)
-if [ -z "$RERANK_API_KEY" ]; then
-  RERANK_API_KEY="$EMBED_API_KEY"
+mkdir -p /var/lib/embeddings
+
+DATA_DIR="/var/lib/embeddings"
+API_KEY_FILE="${DATA_DIR}/.api_key"
+AUTO_API_KEY_MARKER="${DATA_DIR}/.auto_api_key_created"
+data_mounted=false
+data_existing=false
+
+if grep -q " ${DATA_DIR} " /proc/mounts 2>/dev/null; then
+  data_mounted=true
+fi
+if $data_mounted && find "$DATA_DIR" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null | grep -q .; then
+  data_existing=true
 fi
 
-mkdir -p /var/lib/embeddings
+if [ -n "$EMBED_API_KEY" ]; then
+  printf '%s' "$EMBED_API_KEY" > "$API_KEY_FILE"
+  chmod 600 "$API_KEY_FILE"
+elif [ -z "$EMBED_API_KEY_WAS_SET" ] && [ -f "$API_KEY_FILE" ]; then
+  EMBED_API_KEY=$(cat "$API_KEY_FILE")
+elif [ -z "$EMBED_API_KEY_WAS_SET" ] && $data_mounted && ! $data_existing; then
+  EMBED_API_KEY="embed-$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d ' \n' | head -c 48)"
+  printf '%s' "$EMBED_API_KEY" > "$API_KEY_FILE"
+  chmod 600 "$API_KEY_FILE"
+  printf '%s\n' "true" > "$AUTO_API_KEY_MARKER"
+  chmod 600 "$AUTO_API_KEY_MARKER"
+fi
+
+# Resolve reranker API key. When unset, it falls back to EMBED_API_KEY.
+# When explicitly set empty, it remains empty as an intentional no-auth opt-out.
+if [ -z "$RERANK_API_KEY_WAS_SET" ]; then
+  RERANK_API_KEY="$EMBED_API_KEY"
+fi
 
 # In local-only mode, verify models are already cached before starting
 if [ -n "$EMBED_LOCAL_ONLY" ]; then
@@ -174,6 +204,16 @@ printf '%s' "$embed_active" > /var/lib/embeddings/.embed_active
 printf '%s' "$rerank_active" > /var/lib/embeddings/.rerank_active
 printf '%s' "$RERANK_PORT"  > /var/lib/embeddings/.rerank_port
 printf '%s' "$RERANK_MODEL" > /var/lib/embeddings/.rerank_model
+if [ -n "$EMBED_API_KEY" ]; then
+  printf '%s' "1" > /var/lib/embeddings/.embed_auth_enabled
+else
+  printf '%s' "0" > /var/lib/embeddings/.embed_auth_enabled
+fi
+if [ -n "$RERANK_API_KEY" ]; then
+  printf '%s' "1" > /var/lib/embeddings/.rerank_auth_enabled
+else
+  printf '%s' "0" > /var/lib/embeddings/.rerank_auth_enabled
+fi
 
 echo
 echo "Embeddings Docker - https://github.com/hwdsl2/docker-embeddings"
@@ -183,6 +223,15 @@ if ! grep -q " /var/lib/embeddings " /proc/mounts 2>/dev/null; then
   echo "Note: /var/lib/embeddings is not mounted. Model files will be lost on"
   echo "      container removal. Mount a Docker volume at /var/lib/embeddings"
   echo "      to persist the downloaded model across container restarts."
+  if [ -z "$EMBED_API_KEY" ] && [ -z "$EMBED_API_KEY_WAS_SET" ]; then
+    echo "      API key authentication was not auto-enabled because the"
+    echo "      data directory is not persistent."
+  fi
+elif [ -z "$EMBED_API_KEY" ] && [ -z "$EMBED_API_KEY_WAS_SET" ] && $data_existing; then
+  echo
+  echo "Warning: Existing embeddings data was found but no API key is configured."
+  echo "         Preserving no-auth behavior for backward compatibility."
+  echo "         Set EMBED_API_KEY to enable authentication."
 fi
 
 echo
