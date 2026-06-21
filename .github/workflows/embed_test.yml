@@ -8,7 +8,7 @@ jobs:
     if: github.repository_owner == 'hwdsl2'
     strategy:
       matrix:
-        test_id: [no-env, with-env, with-key, with-rerank]
+        test_id: [no-env, with-env, with-key, with-rerank, empty-key, existing-no-key]
       fail-fast: false
     env:
       TEST_ID: ${{ matrix.test_id }}
@@ -27,6 +27,14 @@ jobs:
           set -x
 
           docker build -t embed-test .
+
+          if [ "$TEST_ID" = "existing-no-key" ]; then
+            docker volume create embed-test-data
+            docker run --rm --entrypoint sh \
+              -v embed-test-data:/data \
+              embed-test \
+              -c 'printf "%s" "existing" > /data/.server_addr'
+          fi
 
           if [ "$TEST_ID" = "with-env" ]; then
             docker run \
@@ -52,6 +60,23 @@ jobs:
               -v embed-test-data:/var/lib/embeddings \
               -e EMBED_MODEL=BAAI/bge-small-en-v1.5 \
               -e EMBED_API_KEY=test-embed-key \
+              -p 8000:8000/tcp \
+              -d embed-test
+          elif [ "$TEST_ID" = "empty-key" ]; then
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -v embed-test-data:/var/lib/embeddings \
+              -e EMBED_MODEL=BAAI/bge-small-en-v1.5 \
+              -e EMBED_API_KEY= \
+              -p 8000:8000/tcp \
+              -d embed-test
+          elif [ "$TEST_ID" = "existing-no-key" ]; then
+            docker run \
+              --name "$TEST_ID" \
+              --restart=always \
+              -v embed-test-data:/var/lib/embeddings \
+              -e EMBED_MODEL=BAAI/bge-small-en-v1.5 \
               -p 8000:8000/tcp \
               -d embed-test
           elif [ "$TEST_ID" = "with-rerank" ]; then
@@ -86,22 +111,39 @@ jobs:
 
           docker ps | grep "$TEST_ID"
           docker logs "$TEST_ID"
+          if [ "$TEST_ID" = "existing-no-key" ]; then
+            docker logs "$TEST_ID" 2>&1 | grep -q 'Preserving no-auth behavior for backward compatibility'
+          fi
 
           # Verify health endpoint
           docker exec "$TEST_ID" curl -sf http://127.0.0.1:8000/health
 
           # Build optional auth header args for endpoints that require auth when key is set
           embed_curl_args=()
-          [ "$TEST_ID" = "with-key" ] && embed_curl_args=(-H "Authorization: Bearer test-embed-key")
-
-          # Test auth enforcement when EMBED_API_KEY is set
           if [ "$TEST_ID" = "with-key" ]; then
-            # Request without key should return 401
+            embed_curl_args=(-H "Authorization: Bearer test-embed-key")
+          elif [ "$TEST_ID" = "empty-key" ] || [ "$TEST_ID" = "existing-no-key" ]; then
+            embed_key=$(docker exec "$TEST_ID" embed_manage --getkey 2>/dev/null || true)
+            [ -z "$embed_key" ] || { echo "Expected no embeddings API key, got $embed_key"; exit 1; }
+            docker exec "$TEST_ID" test ! -f /var/lib/embeddings/.api_key
+            docker exec "$TEST_ID" test ! -f /var/lib/embeddings/.auto_api_key_created
+          else
+            embed_key=$(docker exec "$TEST_ID" embed_manage --getkey)
+            [ -n "$embed_key" ] || { echo "Generated embeddings API key not found"; exit 1; }
+            docker exec "$TEST_ID" test -f /var/lib/embeddings/.auto_api_key_created
+            embed_curl_args=(-H "Authorization: Bearer $embed_key")
+          fi
+
+          if [ "${#embed_curl_args[@]}" -gt 0 ]; then
+            # Test auth enforcement when EMBED_API_KEY is set/generated
             http_code=$(curl -s -o /dev/null -w '%{http_code}' \
               http://127.0.0.1:8000/v1/embeddings \
               -H "Content-Type: application/json" \
               -d '{"input": "hello", "model": "text-embedding-ada-002"}' 2>/dev/null || true)
             [ "$http_code" = "401" ] || { echo "Expected 401 without key, got $http_code"; exit 1; }
+          else
+            # Explicit empty keys and existing no-key volumes preserve no-auth behavior.
+            curl -sf http://127.0.0.1:8000/info | grep -q '"model_id"'
           fi
 
           # Verify info endpoint
@@ -139,11 +181,14 @@ jobs:
             # Test rerank endpoint
             rerank_response=$(curl -sf http://127.0.0.1:8001/rerank \
               -H "Content-Type: application/json" \
+              "${embed_curl_args[@]}" \
               -d '{"query": "What is AI?", "texts": ["Artificial intelligence is...", "The weather is sunny."], "raw_scores": false}')
             echo "$rerank_response" | grep -q '"score"'
 
             # Verify reranker info endpoint
-            curl -sf http://127.0.0.1:8001/info | grep -q '"model_id"'
+            curl -sf http://127.0.0.1:8001/info \
+              "${embed_curl_args[@]}" \
+              | grep -q '"model_id"'
           fi
 
           docker restart "$TEST_ID"
