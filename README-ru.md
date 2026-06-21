@@ -183,6 +183,8 @@ volumes:
 
 API совместим с [эндпоинтом эмбеддингов OpenAI](https://platform.openai.com/docs/api-reference/embeddings). Любое приложение, уже вызывающее `https://api.openai.com/v1/embeddings`, может переключиться на самостоятельный хостинг, задав:
 
+Эндпоинт `/v1/embeddings` предоставляется напрямую TEI. Поддерживаемые поля запросов OpenAI зависят от TEI; такие поля, как `encoding_format`, `dimensions`, `user`, а также входные token-массивы зависят от upstream-реализации и не документируются и не тестируются этим образом.
+
 ```
 OPENAI_BASE_URL=http://IP_вашего_сервера:8000
 ```
@@ -549,7 +551,7 @@ docker rm -f embeddings
 - Базовый образ (amd64): `ghcr.io/huggingface/text-embeddings-inference:cpu-latest` (Debian)
 - Базовый образ (arm64): собирается из исходников TEI с бэкендами ONNX Runtime + Candle (Debian)
 - Движок эмбеддингов: [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) (на Rust, высокая производительность)
-- API: совместимый с OpenAI эндпоинт `/v1/embeddings` (предоставляется напрямую TEI)
+- API: совместимый с OpenAI эндпоинт `/v1/embeddings` (предоставляется напрямую TEI; поддерживаемые поля зависят от TEI)
 - Переранжирование: TEI эндпоинт `/rerank` через второй процесс с загруженной cross-encoder моделью
 - Директория данных: `/var/lib/embeddings` (Docker-том)
 - Хранилище моделей: формат HuggingFace Hub внутри тома — загружается один раз, переиспользуется при перезапусках

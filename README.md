@@ -183,6 +183,8 @@ volumes:
 
 The API is compatible with [OpenAI's embeddings endpoint](https://platform.openai.com/docs/api-reference/embeddings). Any application already calling `https://api.openai.com/v1/embeddings` can switch to self-hosted by setting:
 
+The `/v1/embeddings` endpoint is served directly by TEI. Supported OpenAI request fields depend on TEI; fields such as `encoding_format`, `dimensions`, `user`, and token-array inputs are upstream-dependent and not documented or tested by this image.
+
 ```
 OPENAI_BASE_URL=http://your_server_ip:8000
 ```
@@ -549,7 +551,7 @@ The Whisper (STT), Embeddings, LiteLLM, Kokoro (TTS), Ollama (LLM), Docling, and
 - Base image (amd64): `ghcr.io/huggingface/text-embeddings-inference:cpu-latest` (Debian)
 - Base image (arm64): Built from TEI source with ONNX Runtime + Candle backends (Debian)
 - Embeddings engine: [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) (Rust-based, high-performance)
-- API: OpenAI-compatible `/v1/embeddings` endpoint (served directly by TEI)
+- API: OpenAI-compatible `/v1/embeddings` endpoint (served directly by TEI; supported fields depend on TEI)
 - Reranking: TEI `/rerank` endpoint via a second process loaded with a cross-encoder model
 - Data directory: `/var/lib/embeddings` (Docker volume)
 - Model storage: HuggingFace Hub format inside the volume — downloaded once, reused on restarts

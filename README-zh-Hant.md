@@ -183,6 +183,8 @@ volumes:
 
 此 API 與 [OpenAI Embeddings 端點](https://platform.openai.com/docs/api-reference/embeddings)相容。任何已呼叫 `https://api.openai.com/v1/embeddings` 的應用程式，只需設定以下環境變數即可切換至自架服務：
 
+`/v1/embeddings` 端點由 TEI 直接提供。支援的 OpenAI 請求欄位取決於 TEI；`encoding_format`、`dimensions`、`user` 和 token 陣列輸入等欄位依賴上游實作，本映像未對其進行文件說明或測試。
+
 ```
 OPENAI_BASE_URL=http://您的伺服器IP:8000
 ```
@@ -549,7 +551,7 @@ Whisper (STT)、Embeddings、LiteLLM、Kokoro (TTS)、Ollama (LLM)、Docling 和
 - 基礎映像（amd64）：`ghcr.io/huggingface/text-embeddings-inference:cpu-latest`（Debian）
 - 基礎映像（arm64）：從 TEI 原始碼編譯，使用 ONNX Runtime + Candle 後端（Debian）
 - 向量化引擎：[Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference)（基於 Rust，高效能）
-- API：OpenAI 相容的 `/v1/embeddings` 端點（由 TEI 直接提供）
+- API：OpenAI 相容的 `/v1/embeddings` 端點（由 TEI 直接提供；支援的欄位取決於 TEI）
 - 重排序：TEI `/rerank` 端點，透過載入交叉編碼器模型的第二個程序提供
 - 資料目錄：`/var/lib/embeddings`（Docker 資料卷）
 - 模型儲存：HuggingFace Hub 格式，儲存在資料卷中——下載一次，重新啟動後繼續使用
