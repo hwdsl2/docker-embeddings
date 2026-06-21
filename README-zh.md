@@ -49,7 +49,7 @@ docker run \
     -d hwdsl2/embeddings-server
 ```
 
-**注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 8000:8000` 替换为 `-p 127.0.0.1:8000:8000`，以防止从外部直接访问未加密端口。当服务器可从公网访问时，请在 `env` 文件中设置 `EMBED_API_KEY`。
+**注：** 如需面向互联网的部署，**强烈建议**使用[反向代理](#使用反向代理)来添加 HTTPS。此时，还应将上述 `docker run` 命令中的 `-p 8000:8000` 替换为 `-p 127.0.0.1:8000:8000`，以防止从外部直接访问未加密端口。
 
 首次启动时，默认模型 `BAAI/bge-small-en-v1.5`（约 130 MB）将自动下载并缓存。查看日志确认服务器已就绪：
 
@@ -98,7 +98,7 @@ docker image tag quay.io/hwdsl2/embeddings-server hwdsl2/embeddings-server
 
 ## 环境变量
 
-所有变量均为可选。设置 `EMBED_API_KEY` 可启用 Bearer Token 认证。
+所有变量均为可选。挂载 `/var/lib/embeddings` 数据卷的新安装会自动生成 Bearer 令牌。没有密钥的既有安装会保持开放以兼容旧行为。
 
 此 Docker 镜像使用以下变量，可在 `env` 文件中声明（参见[示例](embed.env.example)）：
 
@@ -106,14 +106,14 @@ docker image tag quay.io/hwdsl2/embeddings-server hwdsl2/embeddings-server
 |---|---|---|
 | `EMBED_MODEL` | 用于向量化的 HuggingFace 模型 ID。请参阅[模型列表](#切换模型)。 | `BAAI/bge-small-en-v1.5` |
 | `EMBED_PORT` | API 的 HTTP 端口（1–65535）。 | `8000` |
-| `EMBED_API_KEY` | 可选的 Bearer 令牌。设置后所有请求须包含 `Authorization: Bearer <key>`。 | *（未设置）* |
+| `EMBED_API_KEY` | 可选的 Bearer 令牌。新持久化安装会自动生成。设置后所有 API 请求须包含 `Authorization: Bearer <key>`。显式设置为空可禁用认证。 | 新持久化安装自动生成 |
 | `EMBED_HF_TOKEN` | 用于访问私有或受限模型的 HuggingFace Hub 令牌。公开模型无需此项。 | *（未设置）* |
 | `EMBED_LOCAL_ONLY` | 设为任意非空值（如 `true`）时，禁止所有 HuggingFace 模型下载。适用于预先缓存模型的离线或隔离网络部署。 | *（未设置）* |
 | `EMBED_ENABLED` | 设为 `false` 可禁用向量化进程（用于仅重排序模式）。 | `true` |
 | `RERANK_ENABLED` | 设为 `true` 可启用重排序服务器（在独立端口运行交叉编码器模型）。 | *（未设置）* |
 | `RERANK_MODEL` | 用于重排序的 HuggingFace 交叉编码器模型 ID。请参阅[重排序模型](#重排序)。 | `BAAI/bge-reranker-v2-m3` |
 | `RERANK_PORT` | 重排序 API 的 HTTP 端口。如向量化已禁用，则默认为 `8000`。 | `8001` |
-| `RERANK_API_KEY` | 重排序的可选 Bearer 令牌。未设置时回退到 `EMBED_API_KEY`。 | *（回退到 `EMBED_API_KEY`）* |
+| `RERANK_API_KEY` | 重排序的可选 Bearer 令牌。未设置时回退到 `EMBED_API_KEY`。显式设置为空可禁用重排序认证。 | *（回退到 `EMBED_API_KEY`）* |
 
 **注：** 在 `env` 文件中，值可用单引号括起，例如 `VAR='value'`。`=` 两侧不要有空格。如更改 `EMBED_PORT`，请相应更新 `docker run` 命令中的 `-p` 参数。
 
@@ -177,7 +177,7 @@ volumes:
     name: embeddings-data
 ```
 
-**注：** 如需面向公网部署，强烈建议使用[反向代理](#使用反向代理)启用 HTTPS。此时请将 `docker-compose.yml` 中的 `"8000:8000/tcp"` 改为 `"127.0.0.1:8000:8000/tcp"`，以防止未加密端口被直接访问。当服务器可从公网访问时，请在 `env` 文件中设置 `EMBED_API_KEY`。
+**注：** 如需面向公网部署，强烈建议使用[反向代理](#使用反向代理)启用 HTTPS。此时请将 `docker-compose.yml` 中的 `"8000:8000/tcp"` 改为 `"127.0.0.1:8000:8000/tcp"`，以防止未加密端口被直接访问。
 
 ## API 参考
 
@@ -449,7 +449,7 @@ model_list:
 
 如果你的向量化服务器可从公网访问 —— 即使只是短暂可达 —— 也请至少采取以下保护措施。向量化请求携带你的文本数据，未做身份验证的接口会同时面临数据泄露和计算资源滥用的风险。
 
-**1. 设置 API 密钥。** 生成一个强随机密钥并在 `env` 文件中设置 `EMBED_API_KEY`。之后所有 API 请求必须包含 `Authorization: Bearer <key>`。如果启用了重排序，请同时设置 `RERANK_API_KEY`（未设置时自动回退到 `EMBED_API_KEY`）。
+**1. 使用 API 密钥。** 挂载 `/var/lib/embeddings` 数据卷的新安装会自动生成 API 密钥。可用 `docker exec embeddings embed_manage --showkey` 查看；脚本中可用 `docker exec embeddings embed_manage --getkey`。没有密钥的既有安装会保持开放以兼容旧行为；也可以在 `env` 文件中设置 `EMBED_API_KEY` 手动启用认证。所有已认证请求必须包含 `Authorization: Bearer <key>`。如果启用了重排序且未设置 `RERANK_API_KEY`，它会使用 embeddings 密钥。
 
 ```bash
 # 生成 32 字节的随机密钥
@@ -504,8 +504,6 @@ server {
     }
 }
 ```
-
-如服务器对公网开放，请在 `env` 文件中设置 `EMBED_API_KEY`。
 
 ## 更新 Docker 镜像
 

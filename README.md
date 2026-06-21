@@ -49,7 +49,7 @@ docker run \
     -d hwdsl2/embeddings-server
 ```
 
-**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 8000:8000` with `-p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted port. Set `EMBED_API_KEY` in your `env` file when the server is accessible from the public internet.
+**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also replace `-p 8000:8000` with `-p 127.0.0.1:8000:8000` in the `docker run` command above, to prevent direct access to the unencrypted port.
 
 The default model `BAAI/bge-small-en-v1.5` (~130 MB) is downloaded and cached on first start. Check the logs to confirm the server is ready:
 
@@ -98,7 +98,7 @@ Supported platforms: `linux/amd64`, `linux/arm64`.
 
 ## Environment variables
 
-All variables are optional. Set `EMBED_API_KEY` to enable Bearer token authentication.
+All variables are optional. Fresh installs with a mounted `/var/lib/embeddings` volume auto-generate a Bearer token. Existing installs without a key remain open for backward compatibility.
 
 This Docker image uses the following variables, that can be declared in an `env` file (see [example](embed.env.example)):
 
@@ -106,14 +106,14 @@ This Docker image uses the following variables, that can be declared in an `env`
 |---|---|---|
 | `EMBED_MODEL` | HuggingFace model ID to use for embeddings. See [model table](#switching-the-model) for options. | `BAAI/bge-small-en-v1.5` |
 | `EMBED_PORT` | HTTP port for the API (1–65535). | `8000` |
-| `EMBED_API_KEY` | Optional Bearer token. If set, all API requests must include `Authorization: Bearer <key>`. | *(not set)* |
+| `EMBED_API_KEY` | Optional Bearer token. Fresh persistent installs auto-generate one. If set, all API requests must include `Authorization: Bearer <key>`. Set explicitly empty to disable authentication. | Auto-generated for fresh persistent installs |
 | `EMBED_HF_TOKEN` | HuggingFace Hub token for accessing private or gated models. Not required for public models. | *(not set)* |
 | `EMBED_LOCAL_ONLY` | When set to any non-empty value (e.g. `true`), disables all HuggingFace model downloads. For offline or air-gapped deployments with pre-cached models. | *(not set)* |
 | `EMBED_ENABLED` | Set to `false` to disable the embeddings process (for rerank-only mode). | `true` |
 | `RERANK_ENABLED` | Set to `true` to enable the reranking server (cross-encoder model on a separate port). | *(not set)* |
 | `RERANK_MODEL` | HuggingFace cross-encoder model ID for reranking. See [reranker models](#reranking). | `BAAI/bge-reranker-v2-m3` |
 | `RERANK_PORT` | HTTP port for the reranker API. Defaults to `8000` if embeddings is disabled. | `8001` |
-| `RERANK_API_KEY` | Optional Bearer token for the reranker. Falls back to `EMBED_API_KEY` if unset. | *(falls back to `EMBED_API_KEY`)* |
+| `RERANK_API_KEY` | Optional Bearer token for the reranker. Falls back to `EMBED_API_KEY` if unset. Set explicitly empty to disable reranker authentication. | *(falls back to `EMBED_API_KEY`)* |
 
 **Note:** In your `env` file, you may enclose values in single quotes, e.g. `VAR='value'`. Do not add spaces around `=`. If you change `EMBED_PORT`, update the `-p` flag in the `docker run` command accordingly.
 
@@ -177,7 +177,7 @@ volumes:
     name: embeddings-data
 ```
 
-**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"8000:8000/tcp"` to `"127.0.0.1:8000:8000/tcp"` in `docker-compose.yml`, to prevent direct access to the unencrypted port. Set `EMBED_API_KEY` in your `env` file when the server is accessible from the public internet.
+**Note:** For internet-facing deployments, using a [reverse proxy](#using-a-reverse-proxy) to add HTTPS is **strongly recommended**. In that case, also change `"8000:8000/tcp"` to `"127.0.0.1:8000:8000/tcp"` in `docker-compose.yml`, to prevent direct access to the unencrypted port.
 
 ## API reference
 
@@ -449,7 +449,7 @@ Then call the LiteLLM `/rerank` endpoint, and it will proxy to your self-hosted 
 
 If your embeddings server is reachable from the public internet — even briefly — apply at minimum these protections. Embedding requests carry your text data, so an unauthenticated endpoint risks both data leakage and compute abuse.
 
-**1. Set an API key.** Generate a strong random key and set `EMBED_API_KEY` in your `env` file. All API requests must then include `Authorization: Bearer <key>`. If the reranker is enabled, set `RERANK_API_KEY` as well (it falls back to `EMBED_API_KEY` if unset).
+**1. Use an API key.** Fresh installs with a mounted `/var/lib/embeddings` volume auto-generate an API key. Display it with `docker exec embeddings embed_manage --showkey`, or use `docker exec embeddings embed_manage --getkey` in scripts. Existing installs without a key remain open for backward compatibility; set `EMBED_API_KEY` in your `env` file to enable authentication manually. All authenticated requests must include `Authorization: Bearer <key>`. If the reranker is enabled and `RERANK_API_KEY` is unset, it uses the embeddings key.
 
 ```bash
 # Generate a 32-byte random key
@@ -504,8 +504,6 @@ server {
     }
 }
 ```
-
-Set `EMBED_API_KEY` in your `env` file when the server is accessible from the public internet.
 
 ## Update Docker image
 
