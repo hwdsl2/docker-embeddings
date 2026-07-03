@@ -2,6 +2,9 @@ name: embed_test
 
 on: workflow_call
 
+permissions:
+  contents: read
+
 jobs:
   embed_test:
     runs-on: ubuntu-24.04
