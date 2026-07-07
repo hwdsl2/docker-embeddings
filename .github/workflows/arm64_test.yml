@@ -1,0 +1,88 @@
+name: arm64_test
+
+on: workflow_call
+
+permissions:
+  contents: read
+
+jobs:
+  arm64_test:
+    runs-on: ubuntu-24.04-arm
+    if: github.repository_owner == 'hwdsl2'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Test arm64 image
+        run: |
+          [ ! -x /usr/bin/docker ] && exit 1
+
+          cd "$GITHUB_WORKSPACE"
+          pwd
+
+          set -x
+
+          TEI_VER=$(curl -fsSL https://api.github.com/repos/huggingface/text-embeddings-inference/releases/latest \
+            | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')
+          [ -n "$TEI_VER" ] || { echo "Unable to resolve latest TEI release"; exit 1; }
+          echo "TEI version: ${TEI_VER}"
+
+          docker build \
+            -f Dockerfile.arm64 \
+            --build-arg TEI_VERSION="$TEI_VER" \
+            -t embed-arm64-test \
+            .
+
+          docker run \
+            --name embed-arm64-runtime-test \
+            --restart=always \
+            -v embed-arm64-test-data:/var/lib/embeddings \
+            -e EMBED_MODEL=BAAI/bge-small-en-v1.5 \
+            -e EMBED_API_KEY=test-embed-arm64-key \
+            -p 8000:8000/tcp \
+            -d embed-arm64-test
+
+          # Wait for server to be ready (up to 300 seconds for model download)
+          i=0
+          while [ "$i" -lt 300 ]; do
+            if docker exec embed-arm64-runtime-test curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+            i=$((i + 1))
+          done
+
+          docker ps | grep embed-arm64-runtime-test
+          docker logs embed-arm64-runtime-test
+
+          # Verify the image is running as arm64 and the service is healthy.
+          docker exec embed-arm64-runtime-test uname -m | grep -Eq '^(aarch64|arm64)$'
+          docker exec embed-arm64-runtime-test curl -sf http://127.0.0.1:8000/health
+
+          # Verify auth enforcement and OpenAI-compatible embeddings endpoint.
+          http_code=$(curl -s -o /dev/null -w '%{http_code}' \
+            http://127.0.0.1:8000/v1/embeddings \
+            -H "Content-Type: application/json" \
+            -d '{"input": "hello", "model": "text-embedding-ada-002"}' 2>/dev/null || true)
+          [ "$http_code" = "401" ] || { echo "Expected 401 without key, got $http_code"; exit 1; }
+
+          curl -sf http://127.0.0.1:8000/info \
+            -H "Authorization: Bearer test-embed-arm64-key" \
+            | grep -q '"model_id"'
+
+          curl -sf http://127.0.0.1:8000/v1/embeddings \
+            -H "Authorization: Bearer test-embed-arm64-key" \
+            -H "Content-Type: application/json" \
+            -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}' \
+            | grep -q '"embedding"'
+
+          docker exec embed-arm64-runtime-test embed_manage --showinfo
+          docker exec embed-arm64-runtime-test embed_manage --listmodels
+
+          exit 0
+      - name: Clear
+        if: always()
+        run: |
+          docker rm -f embed-arm64-runtime-test || true
+          docker volume rm embed-arm64-test-data || true
+          docker rmi embed-arm64-test || true

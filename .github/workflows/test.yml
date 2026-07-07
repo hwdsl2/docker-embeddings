@@ -8,6 +8,7 @@ on:
       - '.github/workflows/test.yml'
       - '.github/workflows/shellcheck.yml'
       - '.github/workflows/embed_test.yml'
+      - '.github/workflows/arm64_test.yml'
 
 permissions:
   contents: read
@@ -20,3 +21,7 @@ jobs:
   embed_test:
     if: github.repository_owner == 'hwdsl2'
     uses: ./.github/workflows/embed_test.yml
+
+  arm64_test:
+    if: github.repository_owner == 'hwdsl2'
+    uses: ./.github/workflows/arm64_test.yml

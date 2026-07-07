@@ -19,8 +19,13 @@ jobs:
     if: needs.check_update.outputs.should_test == 'true'
     uses: ./.github/workflows/embed_test.yml
 
+  arm64_test:
+    needs: check_update
+    if: needs.check_update.outputs.should_test == 'true'
+    uses: ./.github/workflows/arm64_test.yml
+
   buildx:
-    needs: [check_update, embed_test]
+    needs: [check_update, embed_test, arm64_test]
     if: needs.check_update.outputs.should_update == 'true'
     uses: ./.github/workflows/buildx.yml
     secrets:
