@@ -121,6 +121,7 @@ docker image tag quay.io/hwdsl2/embeddings-server hwdsl2/embeddings-server
 | `RERANK_MODEL` | 用于重排序的 HuggingFace 交叉编码器模型 ID。请参阅[重排序模型](#重排序)。 | `BAAI/bge-reranker-v2-m3` |
 | `RERANK_PORT` | 重排序 API 的 HTTP 端口。如向量化已禁用，则默认为 `8000`。 | `8001` |
 | `RERANK_API_KEY` | 重排序的可选 Bearer 令牌。未设置时回退到 `EMBED_API_KEY`。显式设置为空可禁用重排序认证。 | *（回退到 `EMBED_API_KEY`）* |
+| `EMBED_DISABLE_USAGE_COUNTS` | 设为 `1` 可禁用匿名聚合使用计数。 | *（未设置）* |
 
 **注：** 在 `env` 文件中，值可用单引号括起，例如 `VAR='value'`。`=` 两侧不要有空格。如更改 `EMBED_PORT`，请相应更新 `docker run` 命令中的 `-p` 参数。
 
@@ -542,6 +543,10 @@ docker rm -f embeddings
 Embeddings 可作为更广泛的自托管 AI 设置中的嵌入服务。
 
 如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 Kokoro、Embeddings、LiteLLM、Ollama、Docling 和 MCP Gateway 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)。
+
+## 使用计数
+
+此镜像使用公开的 GitHub Release 资源下载次数进行匿名聚合使用计数。计数是近似值，不代表唯一用户或活跃安装。镜像不会发送遥测负载，也不会使用私有收集器。仅当服务器成功启动且挂载了 `/var/lib/embeddings` 卷后，才会以尽力而为方式计数；当该持久化安装首次运行不同镜像构建时，也会再次计数。要退出，请设置 `EMBED_DISABLE_USAGE_COUNTS=1`。
 
 ## 技术细节
 
