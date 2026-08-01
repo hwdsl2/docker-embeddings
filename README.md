@@ -17,7 +17,7 @@ Docker image to run a self-hosted text embeddings and reranking server, powered 
 - Model management via a helper script (`embed_manage`)
 - Text data stays on your server — no data sent to third parties
 - Offline/air-gapped mode — run without internet access using pre-cached models (`EMBED_LOCAL_ONLY`)
-- Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml)
+- Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions)
 - Persistent model cache via a Docker volume
 - Supported platforms: `linux/amd64`, `linux/arm64`
 

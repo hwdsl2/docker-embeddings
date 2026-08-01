@@ -17,7 +17,7 @@
 - 通过辅助脚本 (`embed_manage`) 管理模型
 - 文本数据留在您的服务器上，不发送给第三方
 - 离线/隔离网络模式 — 使用预先缓存的模型无需互联网访问 (`EMBED_LOCAL_ONLY`)
-- 通过 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) 自动构建和发布
+- 通过 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions) 自动构建和发布
 - 通过 Docker 数据卷持久化模型缓存
 - 支持平台：`linux/amd64`、`linux/arm64`
 

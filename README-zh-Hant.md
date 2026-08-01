@@ -17,7 +17,7 @@
 - 透過輔助腳本 (`embed_manage`) 管理模型
 - 文字資料留在您的伺服器上，不傳送給第三方
 - 離線/隔離網路模式 — 使用預先快取的模型無需網際網路連線 (`EMBED_LOCAL_ONLY`)
-- 透過 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) 自動建置並發布
+- 透過 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions) 自動建置並發布
 - 透過 Docker 資料卷持久化模型快取
 - 支援平台：`linux/amd64`、`linux/arm64`
 
