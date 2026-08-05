@@ -29,13 +29,16 @@ jobs:
 
           docker build \
             -f Dockerfile.arm64 \
+            --build-arg BUILD_DATE=ci-test \
             --build-arg TEI_VERSION="$TEI_VER" \
+            --build-arg VERSION=latest \
             -t embed-arm64-test \
             .
 
           docker run \
             --name embed-arm64-runtime-test \
             --restart=always \
+            -e EMBED_DISABLE_USAGE_COUNTS=1 \
             -v embed-arm64-test-data:/var/lib/embeddings \
             -e EMBED_MODEL=BAAI/bge-small-en-v1.5 \
             -e EMBED_API_KEY=test-embed-arm64-key \
