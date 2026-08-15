@@ -49,7 +49,7 @@ RUN apt-get update \
        curl ca-certificates libssl-dev libomp-dev \
     && python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
-    && /opt/venv/bin/pip install --no-cache-dir --uploaded-prior-to P3D huggingface_hub \
+    && /opt/venv/bin/pip install --no-cache-dir --uploaded-prior-to P7D huggingface_hub \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /var/lib/embeddings

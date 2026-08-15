@@ -15,7 +15,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-venv python3-pip curl \
     && python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
-    && /opt/venv/bin/pip install --no-cache-dir --uploaded-prior-to P3D huggingface_hub \
+    && /opt/venv/bin/pip install --no-cache-dir --uploaded-prior-to P7D huggingface_hub \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /var/lib/embeddings
