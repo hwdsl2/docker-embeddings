@@ -8,6 +8,8 @@
 
 使用 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 在 Docker 容器中运行文本向量化与重排序服务器。提供 OpenAI 兼容的 `/v1/embeddings` API 和 `/rerank` 接口。简单、私密、可自托管。
 
+> 📘 **新书：**[The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon)——了解如何将此服务部署为完整且默认安全的私有 AI 技术栈的一部分。
+
 **功能特性：**
 
 - OpenAI 兼容的 `POST /v1/embeddings` 接口 — 任何调用 OpenAI Embeddings API 的应用只需修改一行配置即可切换
@@ -23,7 +25,6 @@
 
 **另提供：**
 
-- **新书：**[The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon)——将此服务部署为安全、完整的私有 AI 技术栈的一部分
 - 相关 AI 服务：[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
 
 ## 社区

@@ -8,6 +8,8 @@ Part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stac
 
 Docker image to run a self-hosted text embeddings and reranking server, powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Provides an OpenAI-compatible `/v1/embeddings` API and a `/rerank` endpoint. Designed to be simple, private, and self-hosted.
 
+> 📘 **New book:** [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) — learn how to deploy this service as part of a complete, secure-by-default private AI stack.
+
 **Features:**
 
 - OpenAI-compatible `POST /v1/embeddings` endpoint — any app using the OpenAI embeddings API switches with a one-line change
@@ -23,7 +25,6 @@ Docker image to run a self-hosted text embeddings and reranking server, powered 
 
 **Also available:**
 
-- **New book:** [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) — deploy this service as part of a secure, complete private AI stack
 - Related AI services: [Whisper](https://github.com/hwdsl2/docker-whisper), [Kokoro](https://github.com/hwdsl2/docker-kokoro), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
 ## Community
