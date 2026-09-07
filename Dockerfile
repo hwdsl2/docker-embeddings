@@ -12,7 +12,7 @@ WORKDIR /opt/src
 # python3-venv provides the venv module; python3-pip ensures pip is available
 # on Debian Bookworm where ensurepip may be stripped from the slim base image.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3 python3-venv python3-pip curl \
+    && apt-get install -y --no-install-recommends python3 python3-venv python3-pip ca-certificates curl \
     && python3 -m venv /opt/venv \
     && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
     && /opt/venv/bin/pip install --no-cache-dir --uploaded-prior-to P7D huggingface_hub \
