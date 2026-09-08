@@ -8,8 +8,6 @@
 
 Docker-образ для запуска самостоятельно размещённого сервера текстовых эмбеддингов и переранжирования на базе [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Предоставляет совместимый с OpenAI API `/v1/embeddings` и эндпоинт `/rerank`. Простой, приватный, для самостоятельного развёртывания.
 
-> 📘 **Новая книга:** [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) — узнайте, как развернуть этот сервис в составе полного приватного AI-стека с безопасными настройками по умолчанию.
-
 **Возможности:**
 
 - Совместимый с OpenAI эндпоинт `POST /v1/embeddings` — любое приложение, использующее OpenAI Embeddings API, переключается с изменением одной строки
@@ -23,26 +21,11 @@ Docker-образ для запуска самостоятельно разме�
 - Постоянный кэш моделей через Docker-том
 - Поддерживаемые платформы: `linux/amd64`, `linux/arm64`
 
+> 📘 **Новая книга:** [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon). Практическое руководство по созданию, защите и эксплуатации собственного приватного AI-стека.
+
 **Также доступно:**
 
 - Связанные AI-сервисы: [Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
-
-## Сообщество
-
-- 📬 [Подписаться на обновления проектов](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai-ru) (1–2 письма в месяц) — получить бесплатные руководства по развёртыванию AI и VPN (PDF, на английском)
-- 💬 Присоединяйтесь к сообществу [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/) для обсуждений и демонстрации проектов
-- ⭐ Поставьте звезду репозиторию, если он оказался вам полезен — это поможет другим пользователям его найти.
-
-<details>
-<summary>Самостоятельно размещаемые VPN и сетевые проекты</summary>
-
-- [Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/README-ru.md)
-- [IPsec VPN на Docker](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-ru.md)
-- [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-ru.md)
-- [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-ru.md)
-- [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-ru.md)
-
-</details>
 
 ## Быстрый старт
 
@@ -77,6 +60,23 @@ curl http://IP_вашего_сервера:8000/v1/embeddings \
 ```json
 {"object":"list","data":[{"object":"embedding","embedding":[0.032,...,-0.017],"index":0}],"model":"BAAI/bge-small-en-v1.5","usage":{"prompt_tokens":5,"total_tokens":5}}
 ```
+
+## Сообщество
+
+- 📬 [Получайте новости проектов и бесплатные руководства по развёртыванию](https://selfhostedstack.beehiiv.com/subscribe?utm_campaign=ai-ru) (1–2 письма в месяц; руководства в формате PDF на английском языке)
+- 💬 Присоединяйтесь к сообществу [r/selfhostedstack](https://www.reddit.com/r/selfhostedstack/) для обсуждений и демонстрации проектов
+- ⭐ Поставьте звезду репозиторию, если он оказался вам полезен — это поможет другим пользователям его найти.
+
+<details>
+<summary>Самостоятельно размещаемые VPN и сетевые проекты</summary>
+
+- [Setup IPsec VPN](https://github.com/hwdsl2/setup-ipsec-vpn/blob/master/README-ru.md)
+- [IPsec VPN на Docker](https://github.com/hwdsl2/docker-ipsec-vpn-server/blob/master/README-ru.md)
+- [WireGuard](https://github.com/hwdsl2/docker-wireguard/blob/main/README-ru.md)
+- [OpenVPN](https://github.com/hwdsl2/docker-openvpn/blob/main/README-ru.md)
+- [Headscale](https://github.com/hwdsl2/docker-headscale/blob/main/README-ru.md)
+
+</details>
 
 ## Требования
 
