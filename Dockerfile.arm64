@@ -8,8 +8,8 @@
 # The arm64 build uses the ONNX Runtime + Candle backends with static linking.
 # Build info: https://github.com/huggingface/text-embeddings-inference
 
-# TEI source version (passed via --build-arg in GitHub Actions, defaults to latest release)
-ARG TEI_VERSION=v1.9.3
+# TEI source version. This required build argument is resolved and tested by CI.
+ARG TEI_VERSION
 
 FROM lukemathwalker/cargo-chef:latest-rust-1.92-bookworm AS chef
 WORKDIR /usr/src

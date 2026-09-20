@@ -28,6 +28,8 @@ jobs:
     needs: [check_update, embed_test, arm64_test]
     if: needs.check_update.outputs.should_update == 'true'
     uses: ./.github/workflows/buildx.yml
+    with:
+      tei_version: ${{ needs.arm64_test.outputs.tei_version }}
     secrets:
       CACHE_NAME: ${{ secrets.CACHE_NAME }}
       DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}

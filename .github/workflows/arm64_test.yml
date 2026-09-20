@@ -1,6 +1,11 @@
 name: arm64_test
 
-on: workflow_call
+on:
+  workflow_call:
+    outputs:
+      tei_version:
+        description: Tested Text Embeddings Inference release tag
+        value: ${{ jobs.arm64_test.outputs.tei_version }}
 
 permissions:
   contents: read
@@ -9,11 +14,31 @@ jobs:
   arm64_test:
     runs-on: ubuntu-24.04-arm
     if: github.repository_owner == 'hwdsl2'
+    outputs:
+      tei_version: ${{ steps.resolve_tei.outputs.tei_version }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Resolve TEI release
+        id: resolve_tei
+        shell: bash
+        run: |
+          TEI_VERSION=$(curl -fsSL \
+            --retry 3 --retry-delay 2 --connect-timeout 10 -m 30 \
+            https://api.github.com/repos/huggingface/text-embeddings-inference/releases/latest \
+            | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')
+
+          if [[ ! "$TEI_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?(\+[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Invalid TEI release tag: $TEI_VERSION" >&2
+            exit 1
+          fi
+
+          echo "TEI version: $TEI_VERSION"
+          printf 'tei_version=%s\n' "$TEI_VERSION" >> "$GITHUB_OUTPUT"
       - name: Test arm64 image
+        env:
+          TEI_VERSION: ${{ steps.resolve_tei.outputs.tei_version }}
         run: |
           [ ! -x /usr/bin/docker ] && exit 1
 
@@ -22,18 +47,22 @@ jobs:
 
           set -x
 
-          TEI_VER=$(curl -fsSL https://api.github.com/repos/huggingface/text-embeddings-inference/releases/latest \
-            | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')
-          [ -n "$TEI_VER" ] || { echo "Unable to resolve latest TEI release"; exit 1; }
-          echo "TEI version: ${TEI_VER}"
-
           docker build \
             -f Dockerfile.arm64 \
             --build-arg BUILD_DATE=ci-test \
-            --build-arg TEI_VERSION="$TEI_VER" \
+            --build-arg TEI_VERSION="$TEI_VERSION" \
             --build-arg VERSION=latest \
             -t embed-arm64-test \
             .
+
+          version_output=$(docker run --rm \
+            --network none \
+            --entrypoint /usr/local/bin/text-embeddings-router \
+            embed-arm64-test --version)
+          [ "$version_output" = "text-embeddings-router ${TEI_VERSION#v}" ] || {
+            echo "Expected TEI ${TEI_VERSION#v}, got: $version_output" >&2
+            exit 1
+          }
 
           docker run \
             --name embed-arm64-runtime-test \

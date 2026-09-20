@@ -31,6 +31,8 @@ jobs:
   buildx:
     needs: [shellcheck, embed_test, arm64_test]
     uses: ./.github/workflows/buildx.yml
+    with:
+      tei_version: ${{ needs.arm64_test.outputs.tei_version }}
     secrets:
       CACHE_NAME: ${{ secrets.CACHE_NAME }}
       DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
