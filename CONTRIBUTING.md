@@ -23,3 +23,12 @@ Test the smallest relevant path before opening a PR, for example:
 - Exercise the embeddings API or helper script touched by the change.
 - Check model download/cache behavior when changing model defaults.
 - Run ShellCheck when editing shell scripts.
+
+For a manual arm64 build, pass the TEI release tag explicitly. CI resolves,
+tests, and forwards this value automatically:
+
+```bash
+docker build -f Dockerfile.arm64 \
+  --build-arg TEI_VERSION=v1.9.4 \
+  -t embeddings-server:arm64-test .
+```
