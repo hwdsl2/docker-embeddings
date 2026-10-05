@@ -25,7 +25,7 @@ Docker image to run a self-hosted text embeddings and reranking server, powered 
 
 **Also available:**
 
-- Related AI services: [Whisper](https://github.com/hwdsl2/docker-whisper), [Kokoro](https://github.com/hwdsl2/docker-kokoro), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
+- Related AI services: [ScribeCrate](https://github.com/hwdsl2/scribecrate), [Kokoro](https://github.com/hwdsl2/docker-kokoro), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama](https://github.com/hwdsl2/docker-ollama), [Docling](https://github.com/hwdsl2/docker-docling), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
 
 ## Quick start
 
@@ -51,8 +51,15 @@ docker logs embeddings
 
 Once you see "Text embeddings server is ready", generate your first embeddings:
 
+Fresh persistent installations require an API key. Retrieve it for the following examples:
+
+```bash
+embed_api_key="$(docker exec embeddings embed_manage --getkey)"
+```
+
 ```bash
 curl http://your_server_ip:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}'
 ```
@@ -192,13 +199,20 @@ volumes:
 
 ## API reference
 
-The API is compatible with [OpenAI's embeddings endpoint](https://platform.openai.com/docs/api-reference/embeddings). Any application already calling `https://api.openai.com/v1/embeddings` can switch to self-hosted by setting:
+The API is compatible with [OpenAI's embeddings endpoint](https://platform.openai.com/docs/api-reference/embeddings). For clients using the OpenAI SDK, configure the base URL and your server's API key:
 
 The `/v1/embeddings` endpoint is served directly by TEI. Supported OpenAI request fields depend on TEI; fields such as `encoding_format`, `dimensions`, `user`, and token-array inputs are upstream-dependent and not documented or tested by this image.
 
+Fresh persistent installations require an API key. Retrieve it for the following examples:
+
+```bash
+embed_api_key="$(docker exec embeddings embed_manage --getkey)"
+
+export OPENAI_BASE_URL="http://your_server_ip:8000"
+export OPENAI_API_KEY="$embed_api_key"
 ```
-OPENAI_BASE_URL=http://your_server_ip:8000
-```
+
+If API key authentication is disabled, omit the `Authorization` header in curl examples. OpenAI SDK clients still require a nonempty key; set `OPENAI_API_KEY=unused`.
 
 ### Generate embeddings
 
@@ -218,6 +232,7 @@ Content-Type: application/json
 
 ```bash
 curl http://your_server_ip:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}'
 ```
@@ -226,6 +241,7 @@ curl http://your_server_ip:8000/v1/embeddings \
 
 ```bash
 curl http://your_server_ip:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": ["First sentence", "Second sentence"], "model": "text-embedding-ada-002"}'
 ```
@@ -234,7 +250,7 @@ With API key authentication:
 
 ```bash
 curl http://your_server_ip:8000/v1/embeddings \
-    -H "Authorization: Bearer your_api_key" \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "Your text here", "model": "text-embedding-ada-002"}'
 ```
@@ -265,7 +281,8 @@ GET /info
 Returns the active model ID, maximum input length, and server version.
 
 ```bash
-curl http://your_server_ip:8000/info
+curl http://your_server_ip:8000/info \
+    -H "Authorization: Bearer $embed_api_key"
 ```
 
 ### Rerank documents
@@ -288,8 +305,13 @@ Content-Type: application/json
 
 **Example:**
 
+By default, the reranker uses the embeddings key. If you configured a separate `RERANK_API_KEY`, replace the value below with that key. If reranker authentication is disabled, omit the `Authorization` header.
+
 ```bash
+rerank_api_key="$embed_api_key"
+
 curl http://your_server_ip:8001/rerank \
+    -H "Authorization: Bearer $rerank_api_key" \
     -H "Content-Type: application/json" \
     -d '{
       "query": "What is deep learning?",
@@ -454,7 +476,10 @@ model_list:
     litellm_params:
       model: huggingface/BAAI/bge-reranker-v2-m3
       api_base: http://embeddings:8001
+      api_key: os.environ/RERANK_API_KEY
 ```
+
+Set `RERANK_API_KEY` in the LiteLLM container environment to the key accepted by your reranker. By default, this is the embeddings key retrieved above; use your separately configured reranker key if applicable. If reranker authentication is disabled, omit the `api_key` entry.
 
 Then call the LiteLLM `/rerank` endpoint, and it will proxy to your self-hosted reranker.
 

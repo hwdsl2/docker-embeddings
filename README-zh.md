@@ -25,7 +25,7 @@
 
 **另提供：**
 
-- 相关 AI 服务：[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh.md)、[Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
+- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md)、[Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
 
 ## 快速开始
 
@@ -51,8 +51,15 @@ docker logs embeddings
 
 看到 "Text embeddings server is ready" 后，生成您的第一个文本向量：
 
+新的持久化安装需要 API 密钥。获取密钥以用于以下示例：
+
+```bash
+embed_api_key="$(docker exec embeddings embed_manage --getkey)"
+```
+
 ```bash
 curl http://您的服务器IP:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}'
 ```
@@ -192,13 +199,20 @@ volumes:
 
 ## API 参考
 
-该 API 与 [OpenAI Embeddings 接口](https://platform.openai.com/docs/api-reference/embeddings)兼容。任何已调用 `https://api.openai.com/v1/embeddings` 的应用，只需设置以下环境变量即可切换到自托管服务：
+该 API 与 [OpenAI Embeddings 接口](https://platform.openai.com/docs/api-reference/embeddings)兼容。使用 OpenAI SDK 的客户端需配置 API 基础 URL 和自托管服务器的 API 密钥：
 
 `/v1/embeddings` 接口由 TEI 直接提供。支持的 OpenAI 请求字段取决于 TEI；`encoding_format`、`dimensions`、`user` 和 token 数组输入等字段依赖上游实现，本镜像未对其进行文档说明或测试。
 
+新的持久化安装需要 API 密钥。获取密钥以用于以下示例：
+
+```bash
+embed_api_key="$(docker exec embeddings embed_manage --getkey)"
+
+export OPENAI_BASE_URL="http://您的服务器IP:8000"
+export OPENAI_API_KEY="$embed_api_key"
 ```
-OPENAI_BASE_URL=http://您的服务器IP:8000
-```
+
+如果已禁用 API 密钥认证，请省略 curl 示例中的 `Authorization` 请求头。OpenAI SDK 客户端仍要求提供非空密钥；此时请设置 `OPENAI_API_KEY=unused`。
 
 ### 生成文本向量
 
@@ -218,6 +232,7 @@ Content-Type: application/json
 
 ```bash
 curl http://您的服务器IP:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}'
 ```
@@ -226,6 +241,7 @@ curl http://您的服务器IP:8000/v1/embeddings \
 
 ```bash
 curl http://您的服务器IP:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": ["第一句话", "第二句话"], "model": "text-embedding-ada-002"}'
 ```
@@ -234,7 +250,7 @@ curl http://您的服务器IP:8000/v1/embeddings \
 
 ```bash
 curl http://您的服务器IP:8000/v1/embeddings \
-    -H "Authorization: Bearer your_api_key" \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "您的文本内容", "model": "text-embedding-ada-002"}'
 ```
@@ -265,7 +281,8 @@ GET /info
 返回当前活跃模型 ID、最大输入长度和服务器版本。
 
 ```bash
-curl http://您的服务器IP:8000/info
+curl http://您的服务器IP:8000/info \
+    -H "Authorization: Bearer $embed_api_key"
 ```
 
 ### 重排序文档
@@ -288,8 +305,13 @@ Content-Type: application/json
 
 **示例：**
 
+默认情况下，重排序服务使用 embeddings 密钥。如果您单独配置了 `RERANK_API_KEY`，请将以下变量的值替换为该密钥。如果已禁用重排序认证，请省略 Authorization 请求头。
+
 ```bash
+rerank_api_key="$embed_api_key"
+
 curl http://您的服务器IP:8001/rerank \
+    -H "Authorization: Bearer $rerank_api_key" \
     -H "Content-Type: application/json" \
     -d '{
       "query": "什么是深度学习？",
@@ -454,7 +476,10 @@ model_list:
     litellm_params:
       model: huggingface/BAAI/bge-reranker-v2-m3
       api_base: http://embeddings:8001
+      api_key: os.environ/RERANK_API_KEY
 ```
+
+在 LiteLLM 容器的环境变量中，将 `RERANK_API_KEY` 设置为重排序服务接受的密钥。默认使用上面获取的 embeddings 密钥；如果已单独配置重排序密钥，则使用该密钥。如果已禁用重排序认证，请省略 `api_key` 配置项。
 
 然后调用 LiteLLM 的 `/rerank` 接口，它将代理转发到您的自托管重排序服务。
 

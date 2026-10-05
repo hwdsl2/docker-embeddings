@@ -25,7 +25,7 @@
 
 **另提供：**
 
-- 相關 AI 服務：[Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-zh-Hant.md)、[Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh-Hant.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)
+- 相關 AI 服務：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh-Hant.md)、[Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)、[Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-zh-Hant.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)
 
 ## 快速開始
 
@@ -51,8 +51,15 @@ docker logs embeddings
 
 看到 "Text embeddings server is ready" 後，產生您的第一個文字向量：
 
+新的持久化安裝需要 API 金鑰。取得金鑰以用於以下範例：
+
+```bash
+embed_api_key="$(docker exec embeddings embed_manage --getkey)"
+```
+
 ```bash
 curl http://您的伺服器IP:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}'
 ```
@@ -192,13 +199,20 @@ volumes:
 
 ## API 參考
 
-此 API 與 [OpenAI Embeddings 端點](https://platform.openai.com/docs/api-reference/embeddings)相容。任何已呼叫 `https://api.openai.com/v1/embeddings` 的應用程式，只需設定以下環境變數即可切換至自架服務：
+此 API 與 [OpenAI Embeddings 端點](https://platform.openai.com/docs/api-reference/embeddings)相容。使用 OpenAI SDK 的用戶端需設定 API 基礎 URL 和自架伺服器的 API 金鑰：
 
 `/v1/embeddings` 端點由 TEI 直接提供。支援的 OpenAI 請求欄位取決於 TEI；`encoding_format`、`dimensions`、`user` 和 token 陣列輸入等欄位依賴上游實作，本映像未對其進行文件說明或測試。
 
+新的持久化安裝需要 API 金鑰。取得金鑰以用於以下範例：
+
+```bash
+embed_api_key="$(docker exec embeddings embed_manage --getkey)"
+
+export OPENAI_BASE_URL="http://您的伺服器IP:8000"
+export OPENAI_API_KEY="$embed_api_key"
 ```
-OPENAI_BASE_URL=http://您的伺服器IP:8000
-```
+
+如果已停用 API 金鑰驗證，請省略 curl 範例中的 `Authorization` 標頭。OpenAI SDK 用戶端仍要求提供非空金鑰；此時請設定 `OPENAI_API_KEY=unused`。
 
 ### 產生文字向量
 
@@ -218,6 +232,7 @@ Content-Type: application/json
 
 ```bash
 curl http://您的伺服器IP:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}'
 ```
@@ -226,6 +241,7 @@ curl http://您的伺服器IP:8000/v1/embeddings \
 
 ```bash
 curl http://您的伺服器IP:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": ["第一句話", "第二句話"], "model": "text-embedding-ada-002"}'
 ```
@@ -234,7 +250,7 @@ curl http://您的伺服器IP:8000/v1/embeddings \
 
 ```bash
 curl http://您的伺服器IP:8000/v1/embeddings \
-    -H "Authorization: Bearer your_api_key" \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "您的文字內容", "model": "text-embedding-ada-002"}'
 ```
@@ -265,7 +281,8 @@ GET /info
 返回目前使用的模型 ID、最大輸入長度和伺服器版本。
 
 ```bash
-curl http://您的伺服器IP:8000/info
+curl http://您的伺服器IP:8000/info \
+    -H "Authorization: Bearer $embed_api_key"
 ```
 
 ### 重排序文件
@@ -288,8 +305,13 @@ Content-Type: application/json
 
 **範例：**
 
+預設情況下，重排序服務使用 embeddings 金鑰。如果您另外設定了 `RERANK_API_KEY`，請將以下變數的值替換為該金鑰。如果已停用重排序驗證，請省略 Authorization 標頭。
+
 ```bash
+rerank_api_key="$embed_api_key"
+
 curl http://您的伺服器IP:8001/rerank \
+    -H "Authorization: Bearer $rerank_api_key" \
     -H "Content-Type: application/json" \
     -d '{
       "query": "什麼是深度學習？",
@@ -454,7 +476,10 @@ model_list:
     litellm_params:
       model: huggingface/BAAI/bge-reranker-v2-m3
       api_base: http://embeddings:8001
+      api_key: os.environ/RERANK_API_KEY
 ```
+
+在 LiteLLM 容器的環境變數中，將 `RERANK_API_KEY` 設為重排序服務接受的金鑰。預設使用上面取得的 embeddings 金鑰；如果已另外設定重排序金鑰，則使用該金鑰。如果已停用重排序驗證，請省略 `api_key` 設定項目。
 
 然後呼叫 LiteLLM 的 `/rerank` 端點，它將代理轉發到您的自架重排序服務。
 

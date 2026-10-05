@@ -25,7 +25,7 @@ Docker-образ для запуска самостоятельно разме�
 
 **Также доступно:**
 
-- Связанные AI-сервисы: [Whisper](https://github.com/hwdsl2/docker-whisper/blob/main/README-ru.md), [Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
+- Связанные AI-сервисы: [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md), [Kokoro](https://github.com/hwdsl2/docker-kokoro/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [Docling](https://github.com/hwdsl2/docker-docling/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
 
 ## Быстрый старт
 
@@ -51,8 +51,15 @@ docker logs embeddings
 
 После появления сообщения "Text embeddings server is ready" сгенерируйте первые эмбеддинги:
 
+Новые установки с постоянным томом требуют API-ключ. Получите его для следующих примеров:
+
+```bash
+embed_api_key="$(docker exec embeddings embed_manage --getkey)"
+```
+
 ```bash
 curl http://IP_вашего_сервера:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}'
 ```
@@ -192,13 +199,20 @@ volumes:
 
 ## Справочник по API
 
-API совместим с [эндпоинтом эмбеддингов OpenAI](https://platform.openai.com/docs/api-reference/embeddings). Любое приложение, уже вызывающее `https://api.openai.com/v1/embeddings`, может переключиться на самостоятельный хостинг, задав:
+API совместим с [эндпоинтом эмбеддингов OpenAI](https://platform.openai.com/docs/api-reference/embeddings). Для клиентов, использующих OpenAI SDK, задайте базовый URL API и API-ключ вашего сервера:
 
 Эндпоинт `/v1/embeddings` предоставляется напрямую TEI. Поддерживаемые поля запросов OpenAI зависят от TEI; такие поля, как `encoding_format`, `dimensions`, `user`, а также входные token-массивы зависят от upstream-реализации и не документируются и не тестируются этим образом.
 
+Новые установки с постоянным томом требуют API-ключ. Получите его для следующих примеров:
+
+```bash
+embed_api_key="$(docker exec embeddings embed_manage --getkey)"
+
+export OPENAI_BASE_URL="http://IP_вашего_сервера:8000"
+export OPENAI_API_KEY="$embed_api_key"
 ```
-OPENAI_BASE_URL=http://IP_вашего_сервера:8000
-```
+
+Если аутентификация по API-ключу отключена, опустите заголовок `Authorization` в примерах curl. Клиентам OpenAI SDK по-прежнему нужен непустой ключ; в этом случае задайте `OPENAI_API_KEY=unused`.
 
 ### Генерация эмбеддингов
 
@@ -218,6 +232,7 @@ Content-Type: application/json
 
 ```bash
 curl http://IP_вашего_сервера:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "The quick brown fox", "model": "text-embedding-ada-002"}'
 ```
@@ -226,6 +241,7 @@ curl http://IP_вашего_сервера:8000/v1/embeddings \
 
 ```bash
 curl http://IP_вашего_сервера:8000/v1/embeddings \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": ["Первое предложение", "Второе предложение"], "model": "text-embedding-ada-002"}'
 ```
@@ -234,7 +250,7 @@ curl http://IP_вашего_сервера:8000/v1/embeddings \
 
 ```bash
 curl http://IP_вашего_сервера:8000/v1/embeddings \
-    -H "Authorization: Bearer your_api_key" \
+    -H "Authorization: Bearer $embed_api_key" \
     -H "Content-Type: application/json" \
     -d '{"input": "Ваш текст здесь", "model": "text-embedding-ada-002"}'
 ```
@@ -265,7 +281,8 @@ GET /info
 Возвращает ID активной модели, максимальную длину входного текста и версию сервера.
 
 ```bash
-curl http://IP_вашего_сервера:8000/info
+curl http://IP_вашего_сервера:8000/info \
+    -H "Authorization: Bearer $embed_api_key"
 ```
 
 ### Переранжирование документов
@@ -288,8 +305,13 @@ Content-Type: application/json
 
 **Пример:**
 
+По умолчанию сервис переранжирования использует ключ embeddings. Если вы отдельно задали `RERANK_API_KEY`, замените значение ниже этим ключом. Если аутентификация сервиса переранжирования отключена, опустите заголовок `Authorization`.
+
 ```bash
+rerank_api_key="$embed_api_key"
+
 curl http://IP_вашего_сервера:8001/rerank \
+    -H "Authorization: Bearer $rerank_api_key" \
     -H "Content-Type: application/json" \
     -d '{
       "query": "Что такое глубокое обучение?",
@@ -454,7 +476,10 @@ model_list:
     litellm_params:
       model: huggingface/BAAI/bge-reranker-v2-m3
       api_base: http://embeddings:8001
+      api_key: os.environ/RERANK_API_KEY
 ```
+
+В окружении контейнера LiteLLM задайте `RERANK_API_KEY`, принимаемый вашим сервисом переранжирования. По умолчанию это полученный выше ключ embeddings; если настроен отдельный ключ переранжирования, используйте его. Если аутентификация сервиса переранжирования отключена, опустите параметр `api_key`.
 
 Затем вызывайте эндпоинт `/rerank` LiteLLM — он будет проксировать запросы на ваш самостоятельно размещённый сервер переранжирования.
 
