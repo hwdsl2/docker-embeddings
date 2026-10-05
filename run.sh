@@ -470,6 +470,9 @@ echo
 if [ "$embed_active" = 1 ]; then
   echo "Generate embeddings:"
   echo "  curl http://${server_addr}:${EMBED_PORT}/v1/embeddings \\"
+  if [ -n "$EMBED_API_KEY" ]; then
+    echo "    -H \"Authorization: Bearer <embeddings-api-key>\" \\"
+  fi
   echo "    -H 'Content-Type: application/json' \\"
   echo "    -d '{\"input\": \"Your text here\", \"model\": \"text-embedding-ada-002\"}'"
   echo
@@ -478,6 +481,9 @@ fi
 if [ "$rerank_active" = 1 ]; then
   echo "Rerank documents:"
   echo "  curl http://${server_addr}:${RERANK_PORT}/rerank \\"
+  if [ -n "$RERANK_API_KEY" ]; then
+    echo "    -H \"Authorization: Bearer <reranker-api-key>\" \\"
+  fi
   echo "    -H 'Content-Type: application/json' \\"
   echo "    -d '{\"query\": \"What is AI?\", \"texts\": [\"AI is...\", \"The weather is...\"], \"raw_scores\": false}'"
   echo
@@ -485,12 +491,12 @@ fi
 
 if [ -n "$EMBED_API_KEY" ] && [ "$embed_active" = 1 ]; then
   echo "Embeddings API key authentication is enabled."
-  echo "Include header:  -H \"Authorization: Bearer \$EMBED_API_KEY\""
+  echo "Replace <embeddings-api-key> with the key from: docker exec <container> embed_manage --getkey"
   echo
 fi
 if [ -n "$RERANK_API_KEY" ] && [ "$rerank_active" = 1 ]; then
   echo "Reranker API key authentication is enabled."
-  echo "Include header:  -H \"Authorization: Bearer \$RERANK_API_KEY\""
+  echo "Replace <reranker-api-key> with RERANK_API_KEY if separately configured; otherwise use the embeddings key."
   echo
 fi
 
