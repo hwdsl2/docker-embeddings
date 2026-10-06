@@ -4,22 +4,19 @@
 
 [![构建状态](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-[Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分 ─ 一条命令部署完整的自托管 AI 技术栈。
-
 使用 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 在 Docker 容器中运行文本向量化与重排序服务器。提供 OpenAI 兼容的 `/v1/embeddings` API 和 `/rerank` 接口。简单、私密、可自托管。
 
 **功能特性：**
 
-- OpenAI 兼容的 `POST /v1/embeddings` 接口 — 任何调用 OpenAI Embeddings API 的应用只需修改一行配置即可切换
-- 由 [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) 驱动 — 基于 Rust 的高性能向量化服务器
-- 支持主流向量化模型：`BAAI/bge-small-en-v1.5`、`BAAI/bge-m3`、`nomic-embed-text-v1.5` 等
-- 可选的重排序接口（`POST /rerank`）— 启用交叉编码器模型对检索文档重新评分，提升检索精度
-- 通过辅助脚本 (`embed_manage`) 管理模型
-- 文本数据留在您的服务器上，不发送给第三方
-- 离线/隔离网络模式 — 使用预先缓存的模型无需互联网访问 (`EMBED_LOCAL_ONLY`)
-- 通过 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions) 自动构建和发布
-- 通过 Docker 数据卷持久化模型缓存
-- 支持平台：`linux/amd64`、`linux/arm64`
+- **兼容 OpenAI 的 API：** 通过 `POST /v1/embeddings` 接收兼容的 OpenAI SDK 和应用发出的嵌入请求。
+- **私密的本地处理：** 文本数据留在您的服务器上，不发送给第三方
+- **重排序：** 可选的重排序接口（`POST /rerank`）— 启用交叉编码器模型对检索文档重新评分，提升检索精度
+- **嵌入模型：** 支持主流向量化模型：`BAAI/bge-small-en-v1.5`、`BAAI/bge-m3`、`nomic-embed-text-v1.5` 等
+- **高性能后端：** 由 [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) 驱动 — 基于 Rust 的高性能向量化服务器
+- **离线运行：** 使用预先缓存的模型无需互联网访问 (`EMBED_LOCAL_ONLY`)
+- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions) 自动构建和发布
+
+也可作为 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分使用，一条命令即可部署完整的自托管 AI 技术栈。
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) 是一本关于构建、保护和运维自己的私有 AI 技术栈的实用指南。
 

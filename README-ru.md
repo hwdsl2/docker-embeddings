@@ -4,22 +4,19 @@
 
 [![Статус сборки](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-Часть [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md) — разверните полный самостоятельно размещённый AI-стек одной командой.
-
 Docker-образ для запуска самостоятельно размещённого сервера текстовых эмбеддингов и переранжирования на базе [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Предоставляет совместимый с OpenAI API `/v1/embeddings` и эндпоинт `/rerank`. Простой, приватный, для самостоятельного развёртывания.
 
 **Возможности:**
 
-- Совместимый с OpenAI эндпоинт `POST /v1/embeddings` — любое приложение, использующее OpenAI Embeddings API, переключается с изменением одной строки
-- На базе [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) — высокопроизводительного сервера эмбеддингов на Rust
-- Поддержка популярных моделей: `BAAI/bge-small-en-v1.5`, `BAAI/bge-m3`, `nomic-embed-text-v1.5` и других
-- Опциональное переранжирование через `POST /rerank` — включите cross-encoder модель для повторной оценки найденных документов и повышения точности поиска
-- Управление моделями через вспомогательный скрипт (`embed_manage`)
-- Текстовые данные остаются на вашем сервере — никакие данные не отправляются третьим сторонам
-- Офлайн-режим — работа без доступа к интернету с предварительно кэшированными моделями (`EMBED_LOCAL_ONLY`)
-- Автоматически собирается и публикуется через [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions)
-- Постоянный кэш моделей через Docker-том
-- Поддерживаемые платформы: `linux/amd64`, `linux/arm64`
+- **Совместимый с OpenAI API:** `POST /v1/embeddings` для запросов эмбеддингов из совместимых OpenAI SDK и приложений.
+- **Конфиденциальная локальная обработка:** Текстовые данные остаются на вашем сервере — никакие данные не отправляются третьим сторонам
+- **Переранжирование:** Опциональное переранжирование через `POST /rerank` — включите cross-encoder модель для повторной оценки найденных документов и повышения точности поиска
+- **Модели эмбеддингов:** Поддержка популярных моделей: `BAAI/bge-small-en-v1.5`, `BAAI/bge-m3`, `nomic-embed-text-v1.5` и других
+- **Высокопроизводительный сервер:** На базе [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) — высокопроизводительного сервера эмбеддингов на Rust
+- **Работа без интернета:** работа без доступа к интернету с предварительно кэшированными моделями (`EMBED_LOCAL_ONLY`)
+- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions).
+
+Также доступен в составе [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md), который развёртывает полный AI-стек на собственном сервере одной командой.
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon): практическое руководство по созданию, защите и эксплуатации собственного приватного ИИ-стека.
 

@@ -4,22 +4,19 @@
 
 [![Build Status](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-Part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack) — deploy a complete self-hosted AI stack with a single command.
-
 Docker image to run a self-hosted text embeddings and reranking server, powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Provides an OpenAI-compatible `/v1/embeddings` API and a `/rerank` endpoint. Designed to be simple, private, and self-hosted.
 
 **Features:**
 
-- OpenAI-compatible `POST /v1/embeddings` endpoint — any app using the OpenAI embeddings API switches with a one-line change
-- Powered by [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) — a high-performance Rust-based embeddings server
-- Supports popular embedding models: `BAAI/bge-small-en-v1.5`, `BAAI/bge-m3`, `nomic-embed-text-v1.5` and more
-- Optional reranking via `POST /rerank` — enable a cross-encoder model to re-score retrieved documents for higher retrieval accuracy
-- Model management via a helper script (`embed_manage`)
-- Text data stays on your server — no data sent to third parties
-- Offline/air-gapped mode — run without internet access using pre-cached models (`EMBED_LOCAL_ONLY`)
-- Automatically built and published via [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions)
-- Persistent model cache via a Docker volume
-- Supported platforms: `linux/amd64`, `linux/arm64`
+- **OpenAI-compatible API:** `POST /v1/embeddings` for embedding requests from compatible OpenAI SDKs and apps.
+- **Private, local processing:** text data stays on your server and is not sent to third parties.
+- **Reranking:** use `POST /rerank` with a cross-encoder model to re-score retrieved documents for higher retrieval accuracy.
+- **Embedding models:** choose from `BAAI/bge-small-en-v1.5`, `BAAI/bge-m3`, `nomic-embed-text-v1.5`, and more.
+- **High-performance backend:** powered by [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference), a high-performance embeddings server written in Rust.
+- **Offline operation:** run without internet access using pre-cached models (`EMBED_LOCAL_ONLY`).
+- **Automated builds:** images are automatically built and published through [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions).
+
+Also available as part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack), which deploys a complete self-hosted AI stack with a single command.
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) is a practical guide to building, securing, and operating your own private AI stack.
 

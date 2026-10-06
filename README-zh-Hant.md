@@ -4,22 +4,19 @@
 
 [![建置狀態](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
 
-[Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh-Hant.md) 的一部分 ─ 一條命令部署完整的自託管 AI 技術棧。
-
 使用 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 在 Docker 容器中執行文字向量化與重排序伺服器。提供 OpenAI 相容的 `/v1/embeddings` API 和 `/rerank` 端點。簡單、私密、可自架。
 
 **功能特性：**
 
-- OpenAI 相容的 `POST /v1/embeddings` 端點 — 任何呼叫 OpenAI Embeddings API 的應用程式只需修改一行設定即可切換
-- 由 [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) 驅動 — 基於 Rust 的高效能向量化伺服器
-- 支援主流向量化模型：`BAAI/bge-small-en-v1.5`、`BAAI/bge-m3`、`nomic-embed-text-v1.5` 等
-- 可選的重排序端點（`POST /rerank`）— 啟用交叉編碼器模型對檢索文件重新評分，提升檢索精度
-- 透過輔助腳本 (`embed_manage`) 管理模型
-- 文字資料留在您的伺服器上，不傳送給第三方
-- 離線/隔離網路模式 — 使用預先快取的模型無需網際網路連線 (`EMBED_LOCAL_ONLY`)
-- 透過 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions) 自動建置並發布
-- 透過 Docker 資料卷持久化模型快取
-- 支援平台：`linux/amd64`、`linux/arm64`
+- **相容 OpenAI 的 API：** 透過 `POST /v1/embeddings` 接收相容的 OpenAI SDK 與應用程式發出的嵌入請求。
+- **私密的本地處理：** 文字資料留在您的伺服器上，不傳送給第三方
+- **重新排序：** 可選的重排序端點（`POST /rerank`）— 啟用交叉編碼器模型對檢索文件重新評分，提升檢索精度
+- **嵌入模型：** 支援主流向量化模型：`BAAI/bge-small-en-v1.5`、`BAAI/bge-m3`、`nomic-embed-text-v1.5` 等
+- **高效能後端：** 由 [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) 驅動 — 基於 Rust 的高效能向量化伺服器
+- **離線執行：** 使用預先快取的模型無需網際網路連線 (`EMBED_LOCAL_ONLY`)
+- **自動建置：** 透過 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions) 自動建置並發布
+
+也可作為 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh-Hant.md) 的一部分使用，一條命令即可部署完整的自託管 AI 技術堆疊。
 
 > 📘 [The Self-Hosted AI Builder’s Guide](https://books2read.com/aiguide?store=amazon) 是一本關於建置、保護和維運自己的私有 AI 技術堆疊的實用指南。
 
