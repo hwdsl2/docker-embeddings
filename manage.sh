@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# https://github.com/hwdsl2/docker-embeddings
+# https://github.com/hwdsl2/embedcrate
 #
 # Copyright (C) 2026 Lin Song <linsongui@gmail.com>
 #
@@ -30,8 +30,8 @@ show_usage() {
   fi
   cat 1>&2 <<'EOF'
 
-Embeddings Docker - Server Management
-https://github.com/hwdsl2/docker-embeddings
+EmbedCrate - Server Management
+https://github.com/hwdsl2/embedcrate
 
 Usage: docker exec <container> embed_manage [options]
 
@@ -162,7 +162,7 @@ do_show_key() {
 
   echo
   echo "==========================================================="
-  echo " Embeddings API key"
+  echo " EmbedCrate API key"
   echo "==========================================================="
   echo "${EMBED_API_KEY}"
   echo "==========================================================="
@@ -267,11 +267,11 @@ do_show_info() {
   echo
   echo "==========================================================="
   if [ "$EMBED_ACTIVE" = 1 ] && [ "$RERANK_ACTIVE" = 1 ]; then
-    echo " Text Embeddings & Reranking Server"
+    echo " EmbedCrate: Text Embeddings & Reranking Server"
   elif [ "$RERANK_ACTIVE" = 1 ]; then
-    echo " Reranking Server"
+    echo " EmbedCrate: Reranking Server"
   else
-    echo " Text Embeddings Server"
+    echo " EmbedCrate: Text Embeddings Server"
   fi
   echo "==========================================================="
   if [ "$EMBED_ACTIVE" = 1 ]; then

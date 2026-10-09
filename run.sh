@@ -5,8 +5,8 @@
 # DO NOT RUN THIS SCRIPT ON YOUR PC OR MAC! THIS IS ONLY MEANT TO BE RUN
 # IN A CONTAINER!
 #
-# This file is part of Embeddings Docker image, available at:
-# https://github.com/hwdsl2/docker-embeddings
+# This file is part of EmbedCrate image, available at:
+# https://github.com/hwdsl2/embedcrate
 #
 # Copyright (C) 2026 Lin Song <linsongui@gmail.com>
 #
@@ -300,7 +300,7 @@ else
 fi
 
 echo
-echo "Embeddings Docker - https://github.com/hwdsl2/docker-embeddings"
+echo "EmbedCrate - https://github.com/hwdsl2/embedcrate"
 
 if ! grep -q " /var/lib/embeddings " /proc/mounts 2>/dev/null; then
   echo
@@ -508,7 +508,7 @@ if [ "$rerank_active" = 1 ]; then
 fi
 echo
 echo "To set up HTTPS, see: Using a reverse proxy"
-echo "  https://github.com/hwdsl2/docker-embeddings#using-a-reverse-proxy"
+echo "  https://github.com/hwdsl2/embedcrate#using-a-reverse-proxy"
 echo
 echo "Setup complete."
 echo
