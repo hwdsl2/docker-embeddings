@@ -1,10 +1,14 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# 文本向量化与重排序 API Docker 镜像
+# EmbedCrate
 
-[![构建状态](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+**开源、自托管的文本向量化与重排序 API。**
 
-使用 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 在 Docker 容器中运行文本向量化与重排序服务器。提供 OpenAI 兼容的 `/v1/embeddings` API 和 `/rerank` 接口。简单、私密、可自托管。
+[![构建状态](https://github.com/hwdsl2/embedcrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/embedcrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+
+使用 EmbedCrate 在自己的服务器上运行文本向量化和重排序服务。由 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 驱动，提供 OpenAI 兼容的 `/v1/embeddings` API 和可选的 `/rerank` 接口，支持模型配置和持久化缓存。
+
+原名为 `docker-embeddings`。Docker 镜像仍为 `hwdsl2/embeddings-server`。
 
 **功能特性：**
 
@@ -14,7 +18,7 @@
 - **嵌入模型：** 支持主流向量化模型：`BAAI/bge-small-en-v1.5`、`BAAI/bge-m3`、`nomic-embed-text-v1.5` 等
 - **高性能后端：** 由 [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) 驱动 — 基于 Rust 的高性能向量化服务器
 - **离线运行：** 使用预先缓存的模型无需互联网访问 (`EMBED_LOCAL_ONLY`)
-- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions) 自动构建和发布
+- **自动构建：** 通过 [GitHub Actions](https://github.com/hwdsl2/embedcrate/actions) 自动构建和发布
 
 也可作为 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md) 的一部分使用，一条命令即可部署完整的自托管 AI 技术栈。
 
@@ -22,7 +26,7 @@
 
 **另提供：**
 
-- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md)、[SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-zh.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh.md)、[ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-zh.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh.md)
+- 相关 AI 服务：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh.md)、[SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-zh.md)、[GatewayCrate](https://github.com/hwdsl2/gatewaycrate/blob/main/README-zh.md)、[InferCrate](https://github.com/hwdsl2/infercrate/blob/main/README-zh.md)、[ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-zh.md)、[ToolUplink](https://github.com/hwdsl2/tooluplink/blob/main/README-zh.md)
 
 ## 快速开始
 
@@ -463,9 +467,9 @@ docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 | `BAAI/bge-reranker-large` | ~1.3 GB | ~1.5 GB | 英语；最高精度 |
 | `cross-encoder/ms-marco-MiniLM-L6-v2` | ~90 MB | ~150 MB | 体积最小；速度快；英语 |
 
-### 与 LiteLLM 配合使用
+### 与 GatewayCrate 配合使用
 
-要将重排序服务与 [LiteLLM](https://github.com/hwdsl2/docker-litellm) 配合使用，请在 LiteLLM 配置中添加重排序模型：
+要将重排序服务与 [GatewayCrate](https://github.com/hwdsl2/gatewaycrate) 配合使用，请在 LiteLLM 配置中添加重排序模型：
 
 ```yaml
 model_list:
@@ -567,7 +571,7 @@ docker rm -f embeddings
 
 Embeddings 可作为更广泛的自托管 AI 设置中的嵌入服务。
 
-如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 SpeakCrate、Embeddings、LiteLLM、Ollama、ParseCrate 和 MCP Gateway 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)。
+如需完整和轻量级 Docker Compose 技术栈、手动 `docker run` 示例，以及结合 SpeakCrate、EmbedCrate、GatewayCrate、InferCrate、ParseCrate 和 ToolUplink 的语音/RAG/MCP 流水线示例，请参阅 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh.md)。
 
 ## 使用计数
 

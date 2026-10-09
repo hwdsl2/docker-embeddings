@@ -8,9 +8,9 @@ assignees: ''
 ---
 **Checklist**
 
-- [ ] I read the [README](https://github.com/hwdsl2/docker-embeddings/blob/main/README.md) or the relevant section
-- [ ] I searched existing [Issues](https://github.com/hwdsl2/docker-embeddings/issues?q=is%3Aissue)
-- [ ] This issue is about the Embeddings Docker image/config/API, not only Hugging Face Text Embeddings Inference itself
+- [ ] I read the [README](https://github.com/hwdsl2/embedcrate/blob/main/README.md) or the relevant section
+- [ ] I searched existing [Issues](https://github.com/hwdsl2/embedcrate/issues?q=is%3Aissue)
+- [ ] This issue is about the EmbedCrate Docker image/config/API, not only Hugging Face Text Embeddings Inference itself
 
 <!---
 If you found a reproducible bug in the upstream project itself, consider opening an issue upstream: [Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference).

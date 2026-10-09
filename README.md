@@ -1,10 +1,14 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# Text Embeddings & Reranking API on Docker
+# EmbedCrate
 
-[![Build Status](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+**Open-source, self-hosted text embeddings and reranking API.**
 
-Docker image to run a self-hosted text embeddings and reranking server, powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Provides an OpenAI-compatible `/v1/embeddings` API and a `/rerank` endpoint. Designed to be simple, private, and self-hosted.
+[![Build Status](https://github.com/hwdsl2/embedcrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/embedcrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+
+Run text embeddings and reranking on your own server with EmbedCrate. Powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference), it provides an OpenAI-compatible `/v1/embeddings` API and an optional `/rerank` endpoint, with configurable models and persistent caching.
+
+Previously known as `docker-embeddings`. The Docker image remains `hwdsl2/embeddings-server`.
 
 **Features:**
 
@@ -14,7 +18,7 @@ Docker image to run a self-hosted text embeddings and reranking server, powered 
 - **Embedding models:** choose from `BAAI/bge-small-en-v1.5`, `BAAI/bge-m3`, `nomic-embed-text-v1.5`, and more.
 - **High-performance backend:** powered by [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference), a high-performance embeddings server written in Rust.
 - **Offline operation:** run without internet access using pre-cached models (`EMBED_LOCAL_ONLY`).
-- **Automated builds:** images are automatically built and published through [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions).
+- **Automated builds:** images are automatically built and published through [GitHub Actions](https://github.com/hwdsl2/embedcrate/actions).
 
 Also available as part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack), which deploys a complete self-hosted AI stack with a single command.
 
@@ -22,7 +26,7 @@ Also available as part of the [Self-Hosted AI Stack](https://github.com/hwdsl2/s
 
 **Also available:**
 
-- Related AI services: [ScribeCrate](https://github.com/hwdsl2/scribecrate), [SpeakCrate](https://github.com/hwdsl2/speakcrate), [LiteLLM](https://github.com/hwdsl2/docker-litellm), [Ollama](https://github.com/hwdsl2/docker-ollama), [ParseCrate](https://github.com/hwdsl2/parsecrate), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway)
+- Related AI services: [ScribeCrate](https://github.com/hwdsl2/scribecrate), [SpeakCrate](https://github.com/hwdsl2/speakcrate), [GatewayCrate](https://github.com/hwdsl2/gatewaycrate), [InferCrate](https://github.com/hwdsl2/infercrate), [ParseCrate](https://github.com/hwdsl2/parsecrate), [ToolUplink](https://github.com/hwdsl2/tooluplink)
 
 ## Quick start
 
@@ -463,9 +467,9 @@ In **rerank-only mode**, the reranker listens on port 8000 by default (since the
 | `BAAI/bge-reranker-large` | ~1.3 GB | ~1.5 GB | English; highest accuracy |
 | `cross-encoder/ms-marco-MiniLM-L6-v2` | ~90 MB | ~150 MB | Very small; fast; English |
 
-### Using with LiteLLM
+### Using with GatewayCrate
 
-To use the reranker with [LiteLLM](https://github.com/hwdsl2/docker-litellm), add it as a rerank model in your LiteLLM config:
+To use the reranker with [GatewayCrate](https://github.com/hwdsl2/gatewaycrate), add it as a rerank model in your LiteLLM config:
 
 ```yaml
 model_list:
@@ -567,7 +571,7 @@ Your downloaded models are preserved in the `embeddings-data` volume.
 
 Embeddings can be used as the embedding service in a broader self-hosted AI setup.
 
-For full and lightweight Docker Compose stacks, manual `docker run` examples, and voice/RAG/MCP pipeline examples with SpeakCrate, Embeddings, LiteLLM, Ollama, ParseCrate, and MCP Gateway, see [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack).
+For full and lightweight Docker Compose stacks, manual `docker run` examples, and voice/RAG/MCP pipeline examples with SpeakCrate, EmbedCrate, GatewayCrate, InferCrate, ParseCrate, and ToolUplink, see [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack).
 
 ## Usage counts
 

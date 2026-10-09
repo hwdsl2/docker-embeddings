@@ -1,10 +1,14 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# 文字向量化與重排序 API Docker 映像
+# EmbedCrate
 
-[![建置狀態](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+**開源、自託管的文字向量化與重排序 API。**
 
-使用 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 在 Docker 容器中執行文字向量化與重排序伺服器。提供 OpenAI 相容的 `/v1/embeddings` API 和 `/rerank` 端點。簡單、私密、可自架。
+[![建置狀態](https://github.com/hwdsl2/embedcrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/embedcrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+
+使用 EmbedCrate 在自己的伺服器上執行文字向量化和重排序服務。由 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 驅動，提供相容於 OpenAI 的 `/v1/embeddings` API 和可選的 `/rerank` 端點，支援模型設定和持久化快取。
+
+原名為 `docker-embeddings`。Docker 映像仍為 `hwdsl2/embeddings-server`。
 
 **功能特性：**
 
@@ -14,7 +18,7 @@
 - **嵌入模型：** 支援主流向量化模型：`BAAI/bge-small-en-v1.5`、`BAAI/bge-m3`、`nomic-embed-text-v1.5` 等
 - **高效能後端：** 由 [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) 驅動 — 基於 Rust 的高效能向量化伺服器
 - **離線執行：** 使用預先快取的模型無需網際網路連線 (`EMBED_LOCAL_ONLY`)
-- **自動建置：** 透過 [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions) 自動建置並發布
+- **自動建置：** 透過 [GitHub Actions](https://github.com/hwdsl2/embedcrate/actions) 自動建置並發布
 
 也可作為 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh-Hant.md) 的一部分使用，一條命令即可部署完整的自託管 AI 技術堆疊。
 
@@ -22,7 +26,7 @@
 
 **另提供：**
 
-- 相關 AI 服務：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh-Hant.md)、[SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-zh-Hant.md)、[LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-zh-Hant.md)、[Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-zh-Hant.md)、[ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-zh-Hant.md)、[MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-zh-Hant.md)
+- 相關 AI 服務：[ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-zh-Hant.md)、[SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-zh-Hant.md)、[GatewayCrate](https://github.com/hwdsl2/gatewaycrate/blob/main/README-zh-Hant.md)、[InferCrate](https://github.com/hwdsl2/infercrate/blob/main/README-zh-Hant.md)、[ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-zh-Hant.md)、[ToolUplink](https://github.com/hwdsl2/tooluplink/blob/main/README-zh-Hant.md)
 
 ## 快速開始
 
@@ -463,9 +467,9 @@ docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 | `BAAI/bge-reranker-large` | ~1.3 GB | ~1.5 GB | 英語；最高精度 |
 | `cross-encoder/ms-marco-MiniLM-L6-v2` | ~90 MB | ~150 MB | 體積最小；速度快；英語 |
 
-### 與 LiteLLM 搭配使用
+### 與 GatewayCrate 搭配使用
 
-要將重排序服務與 [LiteLLM](https://github.com/hwdsl2/docker-litellm) 搭配使用，請在 LiteLLM 設定中新增重排序模型：
+要將重排序服務與 [GatewayCrate](https://github.com/hwdsl2/gatewaycrate) 搭配使用，請在 LiteLLM 設定中新增重排序模型：
 
 ```yaml
 model_list:
@@ -567,7 +571,7 @@ docker rm -f embeddings
 
 Embeddings 可作為更廣泛的自託管 AI 設定中的嵌入服務。
 
-如需完整和輕量級 Docker Compose 技術堆疊、手動 `docker run` 範例，以及結合 SpeakCrate、Embeddings、LiteLLM、Ollama、ParseCrate 和 MCP Gateway 的語音/RAG/MCP 流水線範例，請參閱 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh-Hant.md)。
+如需完整和輕量級 Docker Compose 技術堆疊、手動 `docker run` 範例，以及結合 SpeakCrate、EmbedCrate、GatewayCrate、InferCrate、ParseCrate 和 ToolUplink 的語音/RAG/MCP 流水線範例，請參閱 [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-zh-Hant.md)。
 
 ## 使用計數
 

@@ -8,9 +8,9 @@ assignees: ''
 ---
 **Checklist**
 
-- [ ] I searched existing [Issues](https://github.com/hwdsl2/docker-embeddings/issues?q=is%3Aissue), and did not find a similar enhancement request
-- [ ] I read the [README](https://github.com/hwdsl2/docker-embeddings/blob/main/README.md) or the relevant section
-- [ ] This request is about the Embeddings Docker image/config/API, not only Hugging Face Text Embeddings Inference itself
+- [ ] I searched existing [Issues](https://github.com/hwdsl2/embedcrate/issues?q=is%3Aissue), and did not find a similar enhancement request
+- [ ] I read the [README](https://github.com/hwdsl2/embedcrate/blob/main/README.md) or the relevant section
+- [ ] This request is about the EmbedCrate Docker image/config/API, not only Hugging Face Text Embeddings Inference itself
 
 **Describe the enhancement request**
 A clear and concise description of your enhancement request.

@@ -8,9 +8,9 @@ assignees: ''
 ---
 **任务列表**
 
-- [ ] 我已阅读[自述文件](https://github.com/hwdsl2/docker-embeddings/blob/main/README-zh.md)或相关章节
-- [ ] 我搜索了已有的 [Issues](https://github.com/hwdsl2/docker-embeddings/issues?q=is%3Aissue)
-- [ ] 这个问题是关于 Embeddings Docker 镜像/配置/API，而不只是 Hugging Face Text Embeddings Inference 本身
+- [ ] 我已阅读[自述文件](https://github.com/hwdsl2/embedcrate/blob/main/README-zh.md)或相关章节
+- [ ] 我搜索了已有的 [Issues](https://github.com/hwdsl2/embedcrate/issues?q=is%3Aissue)
+- [ ] 这个问题是关于 EmbedCrate Docker 镜像/配置/API，而不只是 Hugging Face Text Embeddings Inference 本身
 
 <!---
 如果你确认问题属于上游项目本身，请考虑在相应上游项目提交 issue：[Text Embeddings Inference](https://github.com/huggingface/text-embeddings-inference)。

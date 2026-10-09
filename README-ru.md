@@ -1,10 +1,14 @@
 [English](README.md) | [简体中文](README-zh.md) | [繁體中文](README-zh-Hant.md) | [Русский](README-ru.md)
 
-# API текстовых эмбеддингов и переранжирования на Docker
+# EmbedCrate
 
-[![Статус сборки](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/docker-embeddings/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+**API текстовых эмбеддингов и переранжирования с открытым исходным кодом для самостоятельного размещения.**
 
-Docker-образ для запуска самостоятельно размещённого сервера текстовых эмбеддингов и переранжирования на базе [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference). Предоставляет совместимый с OpenAI API `/v1/embeddings` и эндпоинт `/rerank`. Простой, приватный, для самостоятельного развёртывания.
+[![Статус сборки](https://github.com/hwdsl2/embedcrate/actions/workflows/main.yml/badge.svg)](https://github.com/hwdsl2/embedcrate/actions/workflows/main.yml) &nbsp;[![Docker Pulls](https://raw.githubusercontent.com/hwdsl2/badges/main/img/docker-pulls-embeddings-server.svg)](https://hub.docker.com/r/hwdsl2/embeddings-server) &nbsp;[![License: MIT](docs/images/license.svg)](https://opensource.org/licenses/MIT)
+
+Запускайте текстовые эмбеддинги и переранжирование на своём сервере с EmbedCrate. Сервис работает на базе [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) и предоставляет совместимый с OpenAI API `/v1/embeddings`, необязательный эндпоинт `/rerank`, настройку моделей и постоянный кеш.
+
+Ранее проект назывался `docker-embeddings`. Docker-образ остаётся `hwdsl2/embeddings-server`.
 
 **Возможности:**
 
@@ -14,7 +18,7 @@ Docker-образ для запуска самостоятельно разме�
 - **Модели эмбеддингов:** Поддержка популярных моделей: `BAAI/bge-small-en-v1.5`, `BAAI/bge-m3`, `nomic-embed-text-v1.5` и других
 - **Высокопроизводительный сервер:** На базе [Hugging Face TEI](https://github.com/huggingface/text-embeddings-inference) — высокопроизводительного сервера эмбеддингов на Rust
 - **Работа без интернета:** работа без доступа к интернету с предварительно кэшированными моделями (`EMBED_LOCAL_ONLY`)
-- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/docker-embeddings/actions).
+- **Автоматическая сборка:** образы автоматически собираются и публикуются через [GitHub Actions](https://github.com/hwdsl2/embedcrate/actions).
 
 Также доступен в составе [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md), который развёртывает полный AI-стек на собственном сервере одной командой.
 
@@ -22,7 +26,7 @@ Docker-образ для запуска самостоятельно разме�
 
 **Также доступно:**
 
-- Связанные AI-сервисы: [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md), [SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-ru.md), [LiteLLM](https://github.com/hwdsl2/docker-litellm/blob/main/README-ru.md), [Ollama](https://github.com/hwdsl2/docker-ollama/blob/main/README-ru.md), [ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-ru.md), [MCP Gateway](https://github.com/hwdsl2/docker-mcp-gateway/blob/main/README-ru.md)
+- Связанные AI-сервисы: [ScribeCrate](https://github.com/hwdsl2/scribecrate/blob/main/README-ru.md), [SpeakCrate](https://github.com/hwdsl2/speakcrate/blob/main/README-ru.md), [GatewayCrate](https://github.com/hwdsl2/gatewaycrate/blob/main/README-ru.md), [InferCrate](https://github.com/hwdsl2/infercrate/blob/main/README-ru.md), [ParseCrate](https://github.com/hwdsl2/parsecrate/blob/main/README-ru.md), [ToolUplink](https://github.com/hwdsl2/tooluplink/blob/main/README-ru.md)
 
 ## Быстрый старт
 
@@ -463,9 +467,9 @@ docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 | `BAAI/bge-reranker-large` | ~1.3 ГБ | ~1.5 ГБ | Английский; наивысшая точность |
 | `cross-encoder/ms-marco-MiniLM-L6-v2` | ~90 МБ | ~150 МБ | Очень компактная; быстрая; английский |
 
-### Использование с LiteLLM
+### Использование с GatewayCrate
 
-Для использования переранжирования с [LiteLLM](https://github.com/hwdsl2/docker-litellm) добавьте его как модель в конфигурацию LiteLLM:
+Для использования переранжирования с [GatewayCrate](https://github.com/hwdsl2/gatewaycrate) добавьте его как модель в конфигурацию LiteLLM:
 
 ```yaml
 model_list:
@@ -567,7 +571,7 @@ docker rm -f embeddings
 
 Embeddings можно использовать как службу эмбеддингов в более широком self-hosted AI-стеке.
 
-Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с SpeakCrate, Embeddings, LiteLLM, Ollama, ParseCrate и MCP Gateway см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md).
+Готовые полные и облегчённые стеки Docker Compose, примеры ручного запуска через `docker run`, а также примеры голосовых, RAG- и MCP-конвейеров с SpeakCrate, EmbedCrate, GatewayCrate, InferCrate, ParseCrate и ToolUplink см. в [Self-Hosted AI Stack](https://github.com/hwdsl2/self-hosted-ai-stack/blob/main/README-ru.md).
 
 ## Счётчики использования
 
