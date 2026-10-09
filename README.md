@@ -8,7 +8,7 @@
 
 Run text embeddings and reranking on your own server with EmbedCrate. Powered by [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference), it provides an OpenAI-compatible `/v1/embeddings` API and an optional `/rerank` endpoint, with configurable models and persistent caching.
 
-Previously known as `docker-embeddings`. The Docker image remains `hwdsl2/embeddings-server`.
+> Previously known as `docker-embeddings`, maintained by [hwdsl2](https://github.com/hwdsl2). The Docker image remains `hwdsl2/embeddings-server`.
 
 **Features:**
 

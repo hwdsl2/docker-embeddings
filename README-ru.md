@@ -8,7 +8,7 @@
 
 Запускайте текстовые эмбеддинги и переранжирование на своём сервере с EmbedCrate. Сервис работает на базе [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) и предоставляет совместимый с OpenAI API `/v1/embeddings`, необязательный эндпоинт `/rerank`, настройку моделей и постоянный кеш.
 
-Ранее проект назывался `docker-embeddings`. Docker-образ остаётся `hwdsl2/embeddings-server`.
+> Ранее проект назывался `docker-embeddings`. Его поддерживает [hwdsl2](https://github.com/hwdsl2). Docker-образ остаётся `hwdsl2/embeddings-server`.
 
 **Возможности:**
 

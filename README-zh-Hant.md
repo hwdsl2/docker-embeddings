@@ -8,7 +8,7 @@
 
 使用 EmbedCrate 在自己的伺服器上執行文字向量化和重排序服務。由 [Hugging Face Text Embeddings Inference (TEI)](https://github.com/huggingface/text-embeddings-inference) 驅動，提供相容於 OpenAI 的 `/v1/embeddings` API 和可選的 `/rerank` 端點，支援模型設定和持久化快取。
 
-原名為 `docker-embeddings`。Docker 映像仍為 `hwdsl2/embeddings-server`。
+> 本專案原名為 `docker-embeddings`，由 [hwdsl2](https://github.com/hwdsl2) 維護。Docker 映像仍為 `hwdsl2/embeddings-server`。
 
 **功能特性：**
 
