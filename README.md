@@ -469,7 +469,7 @@ In **rerank-only mode**, the reranker listens on port 8000 by default (since the
 
 ### Using with GatewayCrate
 
-To use the reranker with [GatewayCrate](https://github.com/hwdsl2/gatewaycrate), add it as a rerank model in your LiteLLM config:
+To use the reranker with LiteLLM, including [GatewayCrate](https://github.com/hwdsl2/gatewaycrate), add it as a rerank model in your LiteLLM config:
 
 ```yaml
 model_list:

@@ -469,7 +469,7 @@ docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 
 ### Использование с GatewayCrate
 
-Для использования переранжирования с [GatewayCrate](https://github.com/hwdsl2/gatewaycrate) добавьте его как модель в конфигурацию LiteLLM:
+Для использования сервиса переранжирования с LiteLLM, включая [GatewayCrate](https://github.com/hwdsl2/gatewaycrate), добавьте его как модель переранжирования в конфигурацию LiteLLM:
 
 ```yaml
 model_list:

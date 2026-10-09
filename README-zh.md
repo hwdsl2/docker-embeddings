@@ -469,7 +469,7 @@ docker exec embeddings embed_manage --pullmodel BAAI/bge-reranker-v2-m3
 
 ### 与 GatewayCrate 配合使用
 
-要将重排序服务与 [GatewayCrate](https://github.com/hwdsl2/gatewaycrate) 配合使用，请在 LiteLLM 配置中添加重排序模型：
+要将重排序服务与 LiteLLM（包括 [GatewayCrate](https://github.com/hwdsl2/gatewaycrate)）配合使用，请在 LiteLLM 配置中添加重排序模型：
 
 ```yaml
 model_list:
